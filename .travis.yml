@@ -1,1 +1,8 @@
 language: c
+addons:
+  apt:
+    packages:
+      - cmake
+      - libevent-dev
+      - curl
+      - ruby
