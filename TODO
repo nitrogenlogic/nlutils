@@ -1,0 +1,6 @@
+Handle EINTR in url_req code to deal with error seen in Palace:
+
+2015-04-08 01:09:57.978469 -0600 - LogicGUIPrototy - ../../src/url_req.c:812: nl_url_req_add():	Error opening option-passing FIFO for writing: 4 (Interrupted system call)
+
+Move bitfield from logic_system
+Make parmaeters to hash.c functions const where possible

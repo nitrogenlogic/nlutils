@@ -1,0 +1,4 @@
+Create more comprehensive tests to verify operation after changes and on
+different platforms.
+
+Add tests for stream functions.

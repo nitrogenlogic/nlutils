@@ -1,0 +1,80 @@
+#!/bin/sh
+# Displays a list of available webapps on this controller
+# Copyright (C)2015 Mike Bourgeous.  Released under AGPLv3 in 2018.
+
+
+##### Include common functions #####
+. ./common.sh
+
+HN=`hostname`
+FHN=${HN}.local
+
+
+echo "Content-Type: text/html; charset=UTF-8"
+echo
+
+echo '<!DOCTYPE html>'
+echo '<html>'
+echo '<head>'
+echo '	<title>Nitrogen Logic - Available Applications</title>'
+echo '	<link href="../styles/boilerplate.css" rel="stylesheet" type="text/css">'
+echo '	<link href="../styles/main.css" rel="stylesheet" type="text/css">'
+echo '	<link href="../styles/box.css" rel="stylesheet" type="text/css">'
+cat << EOF
+<script type="text/javascript">
+window.onload = function() {
+	var links = document.getElementsByTagName('a');
+	for(var i = 0; i < links.length; i++) {
+		var a = links[i];
+		if(a.href.match(/${FHN}/)) {
+			a.href = a.href.replace(/${FHN}/, location.host);
+		}
+	}
+}
+</script>
+EOF
+echo '</head>'
+
+echo '<body>'
+echo '<div id="content">'
+echo "<header><hgroup><h1>Nitrogen Logic - Available Applications</h1><h2>$FHN</h2></hgroup></header>"
+echo '<div id="main">'
+
+count=0
+for f in /opt/nitrogenlogic/*/appinfo.txt; do
+	if [ -e "$f" ]; then
+		count=$(($count + 1))
+		APP_NAME=""
+		APP_AUTHOR=""
+		APP_DESC=""
+		APP_PORT=""
+		APP_PATH=""
+		. "$f"
+		URI="http://$FHN:$APP_PORT$APP_PATH"
+		echo '<section class="box darkbox invbox fullbox">'
+		echo "<header><h1><a href="$URI">$(echo "$APP_NAME" | basic_html_escape)</a></h1></header>"
+		echo "<header><h2 style=\"font-style: italic;\">$(echo "$APP_AUTHOR" | basic_html_escape)</h2></header>"
+		echo "<p>$(echo "$APP_DESC" | basic_html_escape)</p>"
+		echo '</section>'
+	fi
+done
+
+if [ $count -eq 0 ]; then
+	echo '<section class="box darkbox invbox fullbox">'
+	echo "<header><h1>Error - No Applications Found</h1></header>"
+	echo '<p>Please contact Nitrogen Logic for assistance.</p>'
+	echo '</section>'
+fi
+
+echo '</div>'
+echo '<footer>'
+echo '<p class="copyright">&copy;2015 Nitrogen Logic &mdash; '
+echo '<a href="../source.html">Open source information</a>'
+if stat ../packages/*.deb > /dev/null 2>&1 || stat ../packages/*/*.deb > /dev/null 2>&1; then
+	echo ' &mdash; <a href="../packages/">Downloadable client software</a>'
+fi
+echo '</p>'
+echo '</footer>'
+echo '</div>'
+echo '</body>'
+echo '</html>'

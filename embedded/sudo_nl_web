@@ -1,0 +1,5 @@
+# Utilities used by web interface
+Cmnd_Alias 	NL_WEB_UTILS = /opt/nitrogenlogic/util/
+
+# Allow web interface to change settings
+www-data	ALL=NOPASSWD: NL_WEB_UTILS

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Nitrogen Logic - Firmware Update</title>
+	<link href="styles/boilerplate.css" rel="stylesheet" type="text/css">
+	<link href="styles/main.css" rel="stylesheet" type="text/css">
+	<link href="styles/box.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+	<div id="content">
+		<header><hgroup><h1>Nitrogen Logic - Firmware Update</h1></hgroup></header>
+		<div id="main">
+			<section class="box darkbox invbox fullbox">
+				<header><h1>Firmware Update</h1></header>
+				<form method="POST" action="cgi-bin/firmware" charset="utf-8" enctype="multipart/form-data">
+				        <div class="box darkbox invbox inlinebox"><input type="file" name="firmware_file"></input></div>
+				        <div class="inlinebox"><input type="submit" name="submit" value="Upload Firmware"></input></div>
+				</form>
+			</section>
+		</div>
+		<footer><p class="copyright">&copy;2015 Nitrogen Logic</p></footer>
+	</div>
+</body>
+</html>

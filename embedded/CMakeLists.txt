@@ -1,0 +1,12 @@
+install(PROGRAMS firmware_update.sh set_hostname.sh shutdown.sh
+	DESTINATION ${INSTALLDIR}/opt/nitrogenlogic/util/
+	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+		GROUP_READ GROUP_EXECUTE SETUID)
+
+install(DIRECTORY web/
+	DESTINATION ${INSTALLDIR}/var/www/
+	USE_SOURCE_PERMISSIONS)
+
+install(FILES sudo_nl_web
+	DESTINATION ${INSTALLDIR}/etc/sudoers.d/
+	PERMISSIONS OWNER_READ GROUP_READ)
