@@ -42,7 +42,7 @@ serve as a reference to anyone who might find it useful.
 # Copying
 
 Copyright 2011-2018 Mike Bourgeous, licensed under [GNU Affero GPLv3][0].  See
-agpl3.txt for the complete text of the license.
+LICENSE for the complete text of the license.
 
 Why AGPLv3?  Because this code probably shouldn't be used for new development.
 If you want more permissive terms, just get in touch.
