@@ -1,0 +1,13 @@
+script: make ncpus=8 && make test
+language: c
+compiler:
+  - clang
+  - gcc
+addons:
+  apt:
+    packages:
+      - cmake
+      - libevent-dev
+      - curl
+      - ruby
+      - valgrind
