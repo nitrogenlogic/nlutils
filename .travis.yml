@@ -6,3 +6,4 @@ addons:
       - libevent-dev
       - curl
       - ruby
+      - valgrind
