@@ -28,7 +28,7 @@ One original goal of Nitrogen Logic was to license code to OEMs to allow them to
 add easy support for automation and IoT, so I decided to write my own functions
 instead of using something open source like glib.  That way there'd be fewer
 dependencies, fewer licenses for OEMs to wrangle, and greater possibility for
-customization.
+customization.  The nlutils code also strives to comply to C99 and POSIX.1-2008.
 
 Some of this code was extracted from other projects (such as the depth camera
 server and the logic system for Nitrogen Logic's controllers) when the code was
