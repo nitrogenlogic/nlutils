@@ -7,9 +7,19 @@
 #include <dlfcn.h>
 #include <signal.h>
 
-#include "knd.h"
+#include "nlutils.h"
 
-static struct sym_info *symbol_map;
+/*
+ * Information about a symbol within a symbol table.
+ */
+struct nl_sym_info {
+	char name[256];
+	void *addr;
+
+	struct nl_sym_info *next;
+};
+
+static struct nl_sym_info *symbol_map;
 
 /*
  * Adds a symbol, sorted by address, to the symbol map.  Insertion is O(n)
@@ -19,10 +29,10 @@ static struct sym_info *symbol_map;
  */
 static int add_symbol(char *symbol_line)
 {
-	struct sym_info *sym;
+	struct nl_sym_info *sym;
 	size_t addr;
 
-	sym = calloc(1, sizeof(struct sym_info));
+	sym = calloc(1, sizeof(struct nl_sym_info));
 	if(sym == NULL) {
 		perror("Error allocating memory for symbol table entry");
 		return -errno;
@@ -38,7 +48,7 @@ static int add_symbol(char *symbol_line)
 	if(symbol_map == NULL) {
 		symbol_map = sym;
 	} else {
-		struct sym_info *ptr = symbol_map;
+		struct nl_sym_info *ptr = symbol_map;
 
 		while(ptr->next != NULL && ptr->addr < sym->addr) {
 			ptr = ptr->next;
@@ -56,9 +66,9 @@ static int add_symbol(char *symbol_line)
  * than or equal to addr, excluding the _end symbol.  Returns NULL if there is
  * no such symbol.
  */
-static struct sym_info *lookup_symbol(void *addr)
+static struct nl_sym_info *lookup_symbol(void *addr)
 {
-	struct sym_info *sym = symbol_map;
+	struct nl_sym_info *sym = symbol_map;
 
 	if(sym == NULL || sym->addr > addr) {
 		return NULL;
@@ -139,7 +149,7 @@ int load_symbols()
  */
 void unload_symbols()
 {
-	struct sym_info *sym;
+	struct nl_sym_info *sym;
 
 	while(symbol_map != NULL) {
 		sym = symbol_map;
@@ -163,7 +173,7 @@ int find_symbol(void *addr, Dl_info *syminf)
 	}
 
 	if(info.dli_sname == NULL) {
-		struct sym_info *sym = lookup_symbol(addr);
+		struct nl_sym_info *sym = lookup_symbol(addr);
 		if(sym != NULL) {
 			info.dli_sname = sym->name;
 			info.dli_saddr = sym->addr;

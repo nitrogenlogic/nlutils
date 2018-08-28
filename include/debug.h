@@ -5,15 +5,7 @@
 #ifndef NLUTILS_DEBUG_H_
 #define NLUTILS_DEBUG_H_
 
-/*
- * Information about a symbol within a symbol table.
- */
-struct sym_info {
-	char name[256];
-	void *addr;
-
-	struct sym_info *next;
-};
+#include <dlfcn.h>
 
 /*
  * Reads a symbol map from a file whose name is the name of the target of the
@@ -52,8 +44,8 @@ void print_backtrace(FILE *out, void **trace, int count);
 const char *strsigcode(int signum, int si_code);
 
 /*
- *  Prints a backtrace of the current thread using glibc's backtrace() and our
- *  print_backtrace().
+ * Prints a backtrace of the current thread using glibc's backtrace() and our
+ * print_backtrace().
  */
 #define PRINT_TRACE() do { \
 	void *bk_trace[40]; \
