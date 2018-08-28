@@ -306,3 +306,8 @@ runtest true 'Extract version 3 firmware with firmware name and arch' \
 
 runtest false 'Extract version 3 firmware that is expected to fail' \
 	../programs/do_firmware $FIRMWARE_FAIL
+
+# Test debugging functions
+headline "Testing debugging-related functions"
+runtest true 'Debugging-related function tests' \
+	./debug_test
