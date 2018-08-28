@@ -6,6 +6,7 @@
 #include <dlfcn.h>
 #include <signal.h>
 #include <limits.h>
+#include <execinfo.h>
 
 #include "nlutils.h"
 
@@ -16,7 +17,7 @@ struct strsigcode_test {
 	char *expect; // String to expect within the strsigcode string
 };
 
-static struct strsigcode_test strsigcode_tests[] = {
+struct strsigcode_test strsigcode_tests[] = {
 	{
 		.desc = "Illegal opcode",
 		.si_signo = SIGILL,
@@ -49,7 +50,7 @@ static struct strsigcode_test strsigcode_tests[] = {
 	},
 };
 
-static int test_nl_strsigcode(void)
+int test_nl_strsigcode(void)
 {
 	int ret = 0;
 
@@ -66,21 +67,32 @@ static int test_nl_strsigcode(void)
 	return ret;
 }
 
-static int test_nl_find_symbol(void)
+int test_nl_find_symbol(void)
 {
 	puts("TODO: nl_find_symbol() tests, including tests for symbol table");
 	return -1;
 }
 
-static int test_nl_print_backtrace(void)
+int test_nl_print_backtrace(void)
 {
+	void *trace[40];
+	int tracelength;
 	FILE *f = tmpfile();
 	if(f == NULL) {
 		ERRNO_OUT("Error creating temporary file for backtrace");
 	}
 
+	tracelength = backtrace(trace, ARRAY_SIZE(trace));
+	nl_print_backtrace(f, trace, tracelength);
+
 	// XXX
-	nl_print_backtrace(stdout, (void *[]){(void *)test_nl_print_backtrace, (void *)test_nl_find_symbol, (void *)strsigcode_tests}, 3);
+	nl_print_backtrace(stdout, trace, tracelength);
+	nl_print_backtrace(stdout, (void *[]){(void *)test_nl_print_backtrace, (void *)test_nl_find_symbol, (void *)strsigcode_tests, (void *)printf}, 4);
+
+	// Rewind the file and check for the backtrace
+	fseek(f, 0, SEEK_SET);
+
+	// TODO
 
 	fclose(f);
 
