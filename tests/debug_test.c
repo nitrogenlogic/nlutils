@@ -66,14 +66,54 @@ static int test_nl_strsigcode(void)
 	return ret;
 }
 
+static int test_nl_find_symbol(void)
+{
+	puts("TODO: nl_find_symbol() tests, including tests for symbol table");
+	return -1;
+}
+
+static int test_nl_print_backtrace(void)
+{
+	FILE *f = tmpfile();
+	if(f == NULL) {
+		ERRNO_OUT("Error creating temporary file for backtrace");
+	}
+
+	// XXX
+	nl_print_backtrace(stdout, (void *[]){(void *)test_nl_print_backtrace, (void *)test_nl_find_symbol, (void *)strsigcode_tests}, 3);
+
+	fclose(f);
+
+	puts("TODO: backtrace tests");
+	return -1;
+}
+
+
 int main(void)
 {
 	int ret = 0;
+
+	if(nl_load_symbols() < 0) {
+		ERROR_OUT("Error loading symbol table with nl_load_symbols().\n");
+		return -1;
+	}
 
 	if(test_nl_strsigcode()) {
 		ERROR_OUT("nl_strsigcode() tests failed.\n");
 		ret = -1;
 	}
+
+	if(test_nl_find_symbol()) {
+		ERROR_OUT("nl_find_symbol() tests failed.\n");
+		ret = -1;
+	}
+
+	if(test_nl_print_backtrace()) {
+		ERROR_OUT("nl_print_backtrace() tests failed.\n");
+		ret = -1;
+	}
+
+	nl_unload_symbols();
 
 	return ret;
 }
