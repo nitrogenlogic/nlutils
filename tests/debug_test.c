@@ -67,36 +67,59 @@ int test_nl_strsigcode(void)
 	return ret;
 }
 
+int nl_test_trace_level_four(FILE *f)
+{
+	NL_PRINT_TRACE(f);
+	return 1;
+}
+
+int nl_test_trace_level_three(FILE *f)
+{
+	return nl_test_trace_level_four(f) + 1;
+}
+
+int nl_test_trace_level_two(FILE *f)
+{
+	return nl_test_trace_level_three(f) + 1;
+}
+
+int nl_test_trace_level_one(FILE *f)
+{
+	return nl_test_trace_level_two(f) + 1;
+}
+
 int test_nl_print_backtrace(void)
 {
-	void *trace[40];
-	int tracelength;
 	FILE *f = tmpfile();
 	if(f == NULL) {
 		ERRNO_OUT("Error creating temporary file for backtrace");
 	}
 
-	tracelength = backtrace(trace, ARRAY_SIZE(trace));
-	nl_print_backtrace(f, trace, tracelength);
+	// Generate the backtrace
+	nl_test_trace_level_one(f);
 
+	// Rewind the file and check the backtrace
+	rewind(f);
+	struct nl_raw_data *trace = nl_read_stream(fileno(f));
+	if(trace == NULL) {
+		ERROR_OUT("Error reading backtrace from temporary file");
+		fclose(f);
+		return -1;
+	}
 
-	// XXX
-	backtrace_symbols_fd(trace, tracelength, 2);
-	backtrace_symbols_fd((void *[]){(void *)test_nl_print_backtrace, (void *)test_nl_print_backtrace + 3, (void *)strsigcode_tests, (void *)printf}, 4, 2);
-	nl_print_backtrace(stdout, trace, tracelength);
-	nl_print_backtrace(stdout, (void *[]){(void *)test_nl_print_backtrace, (void *)test_nl_print_backtrace + 3, (void *)strsigcode_tests, (void *)printf}, 4);
-
-	// Rewind the file and check for the backtrace
-	fseek(f, 0, SEEK_SET);
-
-	// TODO
+	if(!strstr(trace->data, "level_one") || !strstr(trace->data, "level_two") ||
+			!strstr(trace->data, "level_three") || !strstr(trace->data, "level_four")) {
+		ERROR_OUT("Could not find expected function names in the generated backtrace\n");
+		fclose(f);
+		nl_destroy_data(trace);
+		return -1;
+	}
 
 	fclose(f);
+	nl_destroy_data(trace);
 
-	puts("TODO: backtrace tests");
-	return -1;
+	return 0;
 }
-
 
 int main(void)
 {
@@ -105,11 +128,15 @@ int main(void)
 	if(test_nl_strsigcode()) {
 		ERROR_OUT("nl_strsigcode() tests failed.\n");
 		ret = -1;
+	} else {
+		INFO_OUT("nl_strsigcode() tests succeeded.\n");
 	}
 
 	if(test_nl_print_backtrace()) {
 		ERROR_OUT("nl_print_backtrace() tests failed.\n");
 		ret = -1;
+	} else {
+		INFO_OUT("nl_print_backtrace() tests succeeded.\n");
 	}
 
 	return ret;
