@@ -20,6 +20,8 @@ Functions include:
   in the background (see `include/url_req.h`).
 - Threading wrappers to simplify thread creation and management, especially at
   application shutdown (see `include/thread.h`).
+- Functions to print a stack trace e.g. when a SIGSEGV is received (see
+  `include/debug.h`).
 - And others
 
 C's standard library doesn't give you much, so for common functions and data

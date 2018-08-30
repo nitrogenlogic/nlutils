@@ -46,5 +46,8 @@ target_link_libraries(timespec_benchmark nlutils)
 add_executable(stream_test stream_test.c)
 target_link_libraries(stream_test nlutils)
 
+add_executable(debug_test debug_test.c)
+target_link_libraries(debug_test nlutils)
+
 file(COPY firmware tests.sh
 	DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
