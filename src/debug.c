@@ -26,10 +26,10 @@ void nl_print_backtrace(FILE *out, void **trace, int count)
 
 	for(i = 0; i < count; i++) {
 		if(dladdr(trace[i], &info)) {
-			nl_fptmf(out, "%d: 0x%08zx - %s@0x%08zx - %s[0x%zx]+0x%tx\n",
-					i, (size_t)trace[i],
-					info.dli_fname, (size_t)info.dli_fbase,
-					info.dli_sname, (size_t)info.dli_saddr,
+			nl_fptmf(out, "%d: 0x%08" PRIxPTR " - %s@0x%08" PRIxPTR " - %s[0x%" PRIxPTR "]+0x%tx\n",
+					i, (uintptr_t)trace[i],
+					info.dli_fname, (uintptr_t)info.dli_fbase,
+					info.dli_sname, (uintptr_t)info.dli_saddr,
 					trace[i] - info.dli_saddr);
 		} else {
 			nl_fptmf(out, "%d: 0x%08zx - No symbol information\n", i, (size_t)trace[i]);
