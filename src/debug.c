@@ -98,7 +98,9 @@ static struct nl_sym_info *nl_lookup_symbol(void *addr)
  * allow later use of functions like nl_print_backtrace().  This function is not
  * reentrant.
  *
- * FIXME: does this symbol map actually work if ASLR is involved?
+ * FIXME: this doesn't work at all; it doesn't take into account which section
+ * a symbol came from, nor does it compensate for the base address at which
+ * that section is mapped.
  */
 int nl_load_symbols(void)
 {
