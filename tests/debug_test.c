@@ -67,23 +67,23 @@ int test_nl_strsigcode(void)
 	return ret;
 }
 
-int nl_test_trace_level_four(FILE *f)
+int __attribute__((noinline)) nl_test_trace_level_four(FILE *f)
 {
 	NL_PRINT_TRACE(f);
 	return 1;
 }
 
-int nl_test_trace_level_three(FILE *f)
+int __attribute__((noinline)) nl_test_trace_level_three(FILE *f)
 {
 	return nl_test_trace_level_four(f) + 1;
 }
 
-int nl_test_trace_level_two(FILE *f)
+int __attribute__((noinline)) nl_test_trace_level_two(FILE *f)
 {
 	return nl_test_trace_level_three(f) + 1;
 }
 
-int nl_test_trace_level_one(FILE *f)
+int __attribute__((noinline)) nl_test_trace_level_one(FILE *f)
 {
 	return nl_test_trace_level_two(f) + 1;
 }
@@ -109,7 +109,7 @@ int test_nl_print_backtrace(void)
 
 	if(!strstr(trace->data, "level_one") || !strstr(trace->data, "level_two") ||
 			!strstr(trace->data, "level_three") || !strstr(trace->data, "level_four")) {
-		ERROR_OUT("Could not find expected function names in the generated backtrace\n");
+		ERROR_OUT("Could not find expected function names in the generated backtrace:\n\n\e[31m%s\e[0m\n", trace->data);
 		fclose(f);
 		nl_destroy_data(trace);
 		return -1;
@@ -117,7 +117,6 @@ int test_nl_print_backtrace(void)
 
 	fclose(f);
 	nl_destroy_data(trace);
-
 	return 0;
 }
 
