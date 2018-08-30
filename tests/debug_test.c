@@ -67,12 +67,6 @@ int test_nl_strsigcode(void)
 	return ret;
 }
 
-int test_nl_find_symbol(void)
-{
-	puts("TODO: nl_find_symbol() tests, including tests for symbol table");
-	return -1;
-}
-
 int test_nl_print_backtrace(void)
 {
 	void *trace[40];
@@ -85,9 +79,12 @@ int test_nl_print_backtrace(void)
 	tracelength = backtrace(trace, ARRAY_SIZE(trace));
 	nl_print_backtrace(f, trace, tracelength);
 
+
 	// XXX
+	backtrace_symbols_fd(trace, tracelength, 2);
+	backtrace_symbols_fd((void *[]){(void *)test_nl_print_backtrace, (void *)test_nl_print_backtrace + 3, (void *)strsigcode_tests, (void *)printf}, 4, 2);
 	nl_print_backtrace(stdout, trace, tracelength);
-	nl_print_backtrace(stdout, (void *[]){(void *)test_nl_print_backtrace, (void *)test_nl_find_symbol, (void *)strsigcode_tests, (void *)printf}, 4);
+	nl_print_backtrace(stdout, (void *[]){(void *)test_nl_print_backtrace, (void *)test_nl_print_backtrace + 3, (void *)strsigcode_tests, (void *)printf}, 4);
 
 	// Rewind the file and check for the backtrace
 	fseek(f, 0, SEEK_SET);
@@ -105,18 +102,8 @@ int main(void)
 {
 	int ret = 0;
 
-	if(nl_load_symbols() < 0) {
-		ERROR_OUT("Error loading symbol table with nl_load_symbols().\n");
-		return -1;
-	}
-
 	if(test_nl_strsigcode()) {
 		ERROR_OUT("nl_strsigcode() tests failed.\n");
-		ret = -1;
-	}
-
-	if(test_nl_find_symbol()) {
-		ERROR_OUT("nl_find_symbol() tests failed.\n");
 		ret = -1;
 	}
 
@@ -124,8 +111,6 @@ int main(void)
 		ERROR_OUT("nl_print_backtrace() tests failed.\n");
 		ret = -1;
 	}
-
-	nl_unload_symbols();
 
 	return ret;
 }
