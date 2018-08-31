@@ -33,11 +33,13 @@ static void nl_print_address(FILE *out, const char *desc, void *addr)
 }
 
 /*
- * Prints information about the given signal to the given file.  Uses
- * nl_fptmf() to add thread name and timestamp.  This function voids allocating
- * memory, for safe use in signal handlers.
+ * Prints information about the given signal to the given file.  Useful in
+ * signal handlers set by sigaction().  Uses nl_fptmf() to add thread name and
+ * timestamp.  This function voids allocating memory, for safe use in signal
+ * handlers.
  *
  * Parameters:
+ *   out - Where to write the signal info
  *   msg - Text to include at the beginning of the signal message printed
  *   info - Detailed signal info, or NULL (see the sigaction() manual page)
  *
