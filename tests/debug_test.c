@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <limits.h>
 #include <execinfo.h>
+#include <ucontext.h>
 
 #include "nlutils.h"
 
@@ -147,6 +148,19 @@ int test_nl_print_signal(FILE *f)
 	return 0;
 }
 
+int test_nl_print_context(FILE *f)
+{
+	ucontext_t ctx;
+	if(getcontext(&ctx)) {
+		ERRNO_OUT("Error getting current execution context");
+		return -1;
+	}
+
+	nl_print_context(f, &ctx);
+
+	return 0;
+}
+
 struct output_test output_tests[] = {
 	{
 		.desc = "nl_print_backtrace()",
@@ -157,6 +171,11 @@ struct output_test output_tests[] = {
 		.desc = "nl_print_signal()",
 		.func = test_nl_print_signal,
 		.expect = (char *[]){ "Testing 1 2 3", "Originating address", "11", "code 0", NULL },
+	},
+	{
+		.desc = "nl_print_context()",
+		.func = test_nl_print_context,
+		.expect = (char *[]){ "Stack", "test_nl_print_context", "debug_test", NULL },
 	},
 };
 
