@@ -300,18 +300,18 @@ static int nl_timeout_lock(pthread_mutex_t *mutex, int timeout_us)
 {
 	// TODO: expose this function and add tests for it
 	int slept = 0;
-	int ret = 0;
+	int ret;
 
 	if(timeout_us <= 0) {
 		ret = pthread_mutex_lock(mutex);
 	} else {
-		while(slept < timeout_us && ret == EBUSY) {
+		do {
 			ret = pthread_mutex_trylock(mutex);
 			if(ret == EBUSY) {
 				nl_usleep(1000);
 				slept += 1000;
 			}
-		}
+		} while(slept < timeout_us && ret == EBUSY);
 	}
 
 	return ret;

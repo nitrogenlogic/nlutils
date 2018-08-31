@@ -164,6 +164,12 @@ static int mutex_tests()
 	return 0;
 }
 
+void thread_count_test(struct nl_thread *t, void *count)
+{
+	(void)t; // Deliberately unused parameter t
+	(*(int *)count)++;
+}
+
 int main()
 {
 	struct nl_thread_ctx *ctx;
@@ -253,6 +259,16 @@ int main()
 		}
 	}
 
+	// Test thread iteration
+	INFO_OUT("Testing thread iteration.\n");
+	int iter_count = 0;
+	nl_iterate_threads(ctx, 0, thread_count_test, &iter_count);
+	if(iter_count != NUM_THREADS) {
+		ERROR_OUT("Iteration should have counted %d threads, counted %d instead\n", NUM_THREADS, iter_count);
+		nl_destroy_thread_context(ctx);
+		return -1;
+	}
+
 	char *prev_name = strdup("");
 	char *name;
 	void *result;
@@ -282,7 +298,6 @@ int main()
 	if(mutex_tests()) {
 		return -1;
 	}
-
 
 	nl_destroy_thread_context(ctx);
 
