@@ -83,7 +83,7 @@ void nl_print_backtrace(FILE *out, void **trace, int count)
 					GUARD_NULL(info.dli_sname), (uintptr_t)info.dli_saddr,
 					trace[i] - info.dli_saddr);
 		} else {
-			nl_fptmf(out, "%d: 0x%08zx - No symbol information\n", i, (size_t)trace[i]);
+			nl_fptmf(out, "%d: 0x%08" PRIxPTR " - No symbol information\n", i, (uintptr_t)trace[i]);
 		}
 	}
 }
