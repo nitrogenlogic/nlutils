@@ -1,6 +1,6 @@
 /*
  * Thread-related functions.
- * Copyright (C)2014 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2014, 2018 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -289,6 +289,70 @@ int nl_set_thread_priority(struct nl_thread *thread, int sched_class, int prio)
 	}
 
 	return 0;
+}
+
+/*
+ * Waits up to timeout_us microseconds to lock the given mutex, trying roughly
+ * every millisecond.  Returns 0 on success, EBUSY if the timeout expired, or a
+ * different error code if acquiring the lock failed.
+ */
+static int nl_timeout_lock(pthread_mutex_t *mutex, int timeout_us)
+{
+	// TODO: expose this function and add tests for it
+	int slept = 0;
+	int ret = 0;
+
+	if(timeout_us <= 0) {
+		ret = pthread_mutex_lock(mutex);
+	} else {
+		while(slept < timeout_us && ret == EBUSY) {
+			ret = pthread_mutex_trylock(mutex);
+			if(ret == EBUSY) {
+				nl_usleep(1000);
+				slept += 1000;
+			}
+		}
+	}
+
+	return ret;
+}
+
+/*
+ * Calls the given callback for each thread that was created in the given
+ * threading context (thus the main thread that created the context is
+ * excluded).  If lock_timeout_us is greater than zero, then iteration will
+ * proceed anyway after approximately lock_timeout_us microseconds even if the
+ * thread list lock cannot be obtained.  The list of threads should not be
+ * modified by the callback (no creation or joining of threads).
+ */
+void nl_iterate_threads(struct nl_thread_ctx *ctx, int lock_timeout_us, nl_thread_iterator cb, void *cb_data)
+{
+	int ret;
+
+	if(CHECK_NULL(ctx) || CHECK_NULL(cb)) {
+		return;
+	}
+
+	ret = nl_timeout_lock(&ctx->lock, lock_timeout_us);
+	if(ret) {
+		if(ret == EBUSY && lock_timeout_us > 0) {
+			ERROR_OUT("Warning: ignoring lock timeout when iterating threads\n");
+		} else {
+			ERROR_OUT("Error locking thread context lock for iteration: %d (%s)\n", ret, strerror(ret));
+			return;
+		}
+	}
+
+	struct nl_thread *t = ctx->threads;
+	while(t) {
+		cb(t, cb_data);
+		t = t->next;
+	}
+
+	ret = pthread_mutex_unlock(&ctx->lock);
+	if(ret) {
+		ERROR_OUT("Error unlocking thread context lock for iteration: %d (%s)\n", ret, strerror(ret));
+	}
 }
 
 /*
