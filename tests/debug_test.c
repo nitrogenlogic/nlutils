@@ -67,6 +67,52 @@ int test_nl_strsigcode(void)
 	return ret;
 }
 
+struct output_test {
+	char *desc;
+	int (*func)(FILE *); // Function to call with temporary file; nonzero return means test fails
+	char **expect; // NULL-terminated list of strings to expect in the file
+};
+
+int run_output_test(struct output_test *test)
+{
+	FILE *f = tmpfile();
+	if(f == NULL) {
+		ERRNO_OUT("Error creating temporary file for %s", test->desc);
+		return -1;
+	}
+
+	int ret = test->func(f);
+	if(ret) {
+		ERROR_OUT("Non-zero return %d from test function for %s\n", ret, test->desc);
+		fclose(f);
+		return -1;
+	}
+
+	rewind(f);
+	struct nl_raw_data *result = nl_read_stream(fileno(f));
+	if(result == NULL) {
+		ERROR_OUT("Error reading %s results from temporary file", test->desc);
+		fclose(f);
+		return -1;
+	}
+
+	for(char **str = test->expect; *str; str++) {
+		if(!strstr(result->data, *str)) {
+			ERROR_OUT("Did not find expected string '%s' in %s output\n", *str, test->desc);
+			ret = -1;
+		}
+	}
+
+	if(ret) {
+		ERROR_OUT("Actual output:\n\e[31m%s\e[0m\n", result->data);
+	}
+
+	nl_destroy_data(result);
+	fclose(f);
+	return ret;
+}
+
+// TODO: Something like Hedley looks interesting for the noinline attribute
 int __attribute__((noinline)) nl_test_trace_level_four(FILE *f)
 {
 	NL_PRINT_TRACE(f);
@@ -88,37 +134,31 @@ int __attribute__((noinline)) nl_test_trace_level_one(FILE *f)
 	return nl_test_trace_level_two(f) + 1;
 }
 
-int test_nl_print_backtrace(void)
+int test_nl_print_backtrace(FILE *f)
 {
-	FILE *f = tmpfile();
-	if(f == NULL) {
-		ERRNO_OUT("Error creating temporary file for backtrace");
-	}
-
 	// Generate the backtrace
 	nl_test_trace_level_one(f);
-
-	// Rewind the file and check the backtrace
-	rewind(f);
-	struct nl_raw_data *trace = nl_read_stream(fileno(f));
-	if(trace == NULL) {
-		ERROR_OUT("Error reading backtrace from temporary file");
-		fclose(f);
-		return -1;
-	}
-
-	if(!strstr(trace->data, "level_one") || !strstr(trace->data, "level_two") ||
-			!strstr(trace->data, "level_three") || !strstr(trace->data, "level_four")) {
-		ERROR_OUT("Could not find expected function names in the generated backtrace:\n\n\e[31m%s\e[0m\n", trace->data);
-		fclose(f);
-		nl_destroy_data(trace);
-		return -1;
-	}
-
-	fclose(f);
-	nl_destroy_data(trace);
 	return 0;
 }
+
+int test_nl_print_signal(FILE *f)
+{
+	nl_print_signal(f, "Testing 1 2 3", &(siginfo_t){.si_signo = SIGSEGV});
+	return 0;
+}
+
+struct output_test output_tests[] = {
+	{
+		.desc = "nl_print_backtrace()",
+		.func = test_nl_print_backtrace,
+		.expect = (char *[]){ "level_one", "level_two", "level_three", "level_four", NULL },
+	},
+	{
+		.desc = "nl_print_signal()",
+		.func = test_nl_print_signal,
+		.expect = (char *[]){ "Testing 1 2 3", "Originating address", "11", "code 0", NULL },
+	},
+};
 
 int main(void)
 {
@@ -131,11 +171,13 @@ int main(void)
 		INFO_OUT("nl_strsigcode() tests succeeded.\n");
 	}
 
-	if(test_nl_print_backtrace()) {
-		ERROR_OUT("nl_print_backtrace() tests failed.\n");
-		ret = -1;
-	} else {
-		INFO_OUT("nl_print_backtrace() tests succeeded.\n");
+	for(size_t i = 0; i < ARRAY_SIZE(output_tests); i++) {
+		struct output_test *t = &output_tests[i];
+		if(run_output_test(t)) {
+			ERROR_OUT("%s tests failed.\n", t->desc);
+		} else {
+			INFO_OUT("%s tests succeeded.\n", t->desc);
+		}
 	}
 
 	return ret;
