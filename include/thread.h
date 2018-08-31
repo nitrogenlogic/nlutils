@@ -105,6 +105,13 @@ int nl_set_thread_priority(struct nl_thread *thread, int sched_class, int prio);
 void nl_iterate_threads(struct nl_thread_ctx *ctx, int lock_timeout_us, nl_thread_iterator cb, void *cb_data);
 
 /*
+ * Sends the given signal to all the threads in the given context, excluding
+ * the main thread that created the context and the current thread (if it's one
+ * of the threads in the context).  Waits 25ms between threads.
+ */
+void nl_signal_threads(struct nl_thread_ctx *ctx, int signum);
+
+/*
  * Creates a priority inheritance mutex (PTHREAD_PRIO_INHERIT) in *mutex.  Pass
  * PTHREAD_MUTEX_NORMAL for type to create a standard mutex.  For a recursive
  * mutex, pass -1 or PTHREAD_MUTEX_RECURSIVE.  For an error checking mutex,

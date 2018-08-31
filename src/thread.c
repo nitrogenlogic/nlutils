@@ -356,6 +356,38 @@ void nl_iterate_threads(struct nl_thread_ctx *ctx, int lock_timeout_us, nl_threa
 }
 
 /*
+ * Callback for nl_signal_threads().  Signals one thread, then waits 25ms if
+ * there are more threads.
+ */
+static void nl_signal_one_thread(struct nl_thread *t, void *data)
+{
+	pthread_t self = pthread_self();
+	int signum = *(int *)data;
+
+	if(!pthread_equal(t->thread, self)) {
+		int ret = pthread_kill(t->thread, signum);
+		if(ret) {
+			ERROR_OUT("Error sending signal %d (%s) to thread %s: %d (%s)\n",
+					signum, strsignal(signum), t->name, ret, strerror(ret));
+		}
+
+		if(t->next) {
+			nl_usleep(25000);
+		}
+	}
+}
+
+/*
+ * Sends the given signal to all the threads in the given context, excluding
+ * the main thread that created the context and the current thread (if it's one
+ * of the threads in the context).  Waits 25ms between threads.
+ */
+void nl_signal_threads(struct nl_thread_ctx *ctx, int signum)
+{
+	nl_iterate_threads(ctx, 250000, nl_signal_one_thread, &signum);
+}
+
+/*
  * Creates a priority inheritance mutex (PTHREAD_PRIO_INHERIT) in *mutex.  Pass
  * PTHREAD_MUTEX_NORMAL for type to create a standard mutex.  For a recursive
  * mutex, pass -1 or PTHREAD_MUTEX_RECURSIVE.  For an error checking mutex,
