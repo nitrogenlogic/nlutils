@@ -164,7 +164,154 @@ static int mutex_tests()
 	return 0;
 }
 
-void thread_count_test(struct nl_thread *t, void *count)
+struct signal_test_info {
+	struct nl_thread_ctx *ctx;
+	int signum;
+};
+
+struct signal_test_counts {
+	volatile int usr1_count;
+	volatile int usr2_count;
+};
+
+static void *signal_test_first_thread(void *data)
+{
+	struct signal_test_info *info = data;
+	char buf[16];
+
+	nl_get_threadname(buf);
+	INFO_OUT("Thread %s started, waiting\n", buf);
+
+	nl_usleep(2000000);
+
+	INFO_OUT("Thread %s sending %d (%s)\n", buf, info->signum, strsignal(info->signum));
+
+	nl_signal_threads(info->ctx, info->signum);
+
+	return NULL;
+}
+
+static void *signal_test_other_threads(void *data)
+{
+	(void)data; // unused
+
+	char buf[16];
+
+	nl_get_threadname(buf);
+	INFO_OUT("Thread %s started\n", buf);
+
+	nl_usleep(20 * 1000 * 1000);
+
+	ERROR_OUT("Thread %s ran too long; should have been interrupted\n", buf);
+	abort();
+
+	return NULL;
+}
+
+static struct signal_test_counts ctx1_counts = { 0, 0 };
+static struct signal_test_counts ctx2_counts = { 0, 0 };
+static void signal_test_handler(int signum, siginfo_t *info, void *ctx)
+{
+	char buf[16];
+	nl_get_threadname(buf);
+
+	INFO_OUT("Signal handler for thread %s\n", buf);
+
+	nl_print_signal(stdout, buf, info);
+	(void)ctx;// unused
+	/*
+	nl_print_context(stdout, (ucontext_t *)ctx);
+	NL_PRINT_TRACE(stdout);
+	*/
+
+	struct signal_test_counts *counts;
+
+	switch(buf[1]) {
+		case '1':
+			counts = &ctx1_counts;
+			break;
+		case '2':
+			counts = &ctx2_counts;
+			break;
+
+		default:
+			ERROR_OUT("Unexpected context character: %d / %c\n", buf[1], buf[1]);
+			abort();
+	}
+
+	if(signum == SIGUSR1) {
+		__sync_add_and_fetch(&counts->usr1_count, 1);
+	} else if (signum == SIGUSR2) {
+		__sync_add_and_fetch(&counts->usr2_count, 1);
+	} else {
+		ERROR_OUT("Unexpected signal %d\n", signum);
+	}
+
+	pthread_exit(NULL);
+}
+
+// Tests nl_signal_threads() by having the first thread of two contexts signal
+// the other threads in the same context.  The thread initiating the signal
+// should not receive it.
+static int signal_tests(void)
+{
+	struct sigaction handler = {
+		.sa_sigaction = signal_test_handler,
+		.sa_flags = SA_SIGINFO,
+	};
+	struct sigaction oldusr1, oldusr2;
+
+	if(sigaction(SIGUSR1, &handler, &oldusr1) || sigaction(SIGUSR2, &handler, &oldusr2)) {
+		ERRNO_OUT("Error setting signal handlers for signal tests.\n");
+		return -1;
+	}
+
+	struct nl_thread_ctx *ctx1 = nl_create_thread_context();
+	struct nl_thread_ctx *ctx2 = nl_create_thread_context();
+
+	if(ctx1 == NULL || ctx2 == NULL) {
+		ERROR_OUT("Error creating thread contexts for signal tests.\n");
+		return -1;
+	}
+
+	nl_create_thread(ctx1, NULL, signal_test_first_thread, &(struct signal_test_info){.ctx = ctx1, .signum = SIGUSR1}, "C1 First", NULL);
+	nl_create_thread(ctx2, NULL, signal_test_first_thread, &(struct signal_test_info){.ctx = ctx2, .signum = SIGUSR2}, "C2 First", NULL);
+
+	(void)signal_test_other_threads; // XXX
+	/*
+	for(int i = 0; i < NUM_THREADS; i++) {
+		char name[16];
+		snprintf(name, 16, "C1T%d", i);
+		nl_create_thread(ctx1, NULL, signal_test_other_threads, NULL, name, NULL);
+		snprintf(name, 16, "C2T%d", i);
+		nl_create_thread(ctx2, NULL, signal_test_other_threads, NULL, name, NULL);
+	}
+	*/
+
+	// This waits for all threads to finish
+	nl_destroy_thread_context(ctx1);
+	nl_destroy_thread_context(ctx2);
+
+	sigaction(SIGUSR1, &oldusr1, NULL);
+	sigaction(SIGUSR2, &oldusr2, NULL);
+
+	// Verify
+	int ret = 0;
+	if(ctx1_counts.usr1_count != NUM_THREADS || ctx1_counts.usr2_count != 0) {
+		ERROR_OUT("Incorrect number of SIGUSR1/SIGUSR2 on first context.  Expected %d/%d, got %d/%d.\n",
+				NUM_THREADS, 0, ctx1_counts.usr1_count, ctx1_counts.usr2_count);
+		ret = -1;
+	}
+	if(ctx2_counts.usr1_count != 0 || ctx2_counts.usr2_count != NUM_THREADS) {
+		ERROR_OUT("Incorrect number of SIGUSR1/SIGUSR2 on first context.  Expected %d/%d, got %d/%d.\n",
+				0, NUM_THREADS, ctx2_counts.usr1_count, ctx2_counts.usr2_count);
+		ret = -1;
+	}
+
+	return ret;
+}
+
+static void thread_count_cb(struct nl_thread *t, void *count)
 {
 	(void)t; // Deliberately unused parameter t
 	(*(int *)count)++;
@@ -178,8 +325,6 @@ int main()
 	int ret;
 
 	size_t i;
-
-	// TODO: Test multiple thread contexts
 
 	// Test thread creation and joining
 	INFO_OUT("Testing thread creation and destruction.\n");
@@ -245,7 +390,7 @@ int main()
 	}
 
 
-	// Test independence of thread names
+	// Test independence of thread names, test thread iteration
 	INFO_OUT("Verifying thread names are independent.\n");
 	ctx = nl_create_thread_context();
 
@@ -259,10 +404,9 @@ int main()
 		}
 	}
 
-	// Test thread iteration
-	INFO_OUT("Testing thread iteration.\n");
+	INFO_OUT("\tTesting thread iteration.\n");
 	int iter_count = 0;
-	nl_iterate_threads(ctx, 0, thread_count_test, &iter_count);
+	nl_iterate_threads(ctx, 0, thread_count_cb, &iter_count);
 	if(iter_count != NUM_THREADS) {
 		ERROR_OUT("Iteration should have counted %d threads, counted %d instead\n", NUM_THREADS, iter_count);
 		nl_destroy_thread_context(ctx);
@@ -300,6 +444,13 @@ int main()
 	}
 
 	nl_destroy_thread_context(ctx);
+
+
+	// Test thread signaling
+	INFO_OUT("Testing thread signaling helpers.\n");
+	if(signal_tests()) {
+		return -1;
+	}
 
 	return 0;
 }
