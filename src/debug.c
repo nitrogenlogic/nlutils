@@ -1,7 +1,8 @@
 /*
  * Functions used for debugging purposes (e.g. printing backtraces).
- * Copyright (C)2013 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2013, 2018 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <dlfcn.h>
@@ -9,6 +10,102 @@
 #include <stddef.h>
 
 #include "nlutils.h"
+
+#define ADDR_FORMAT "0x%08" PRIxPTR
+#define SYM_FORMAT "%s@" ADDR_FORMAT
+
+/*
+ * Prints information about the given address, including symbol information for
+ * the address if available.
+ */
+static void nl_print_address(FILE *out, const char *desc, void *addr)
+{
+	Dl_info syminfo;
+	if(dladdr(addr, &syminfo)) {
+		nl_fptmf(out, "%s: " ADDR_FORMAT " (" SYM_FORMAT " from " SYM_FORMAT ").\n",
+				desc, (uintptr_t)addr,
+				GUARD_NULL(syminfo.dli_sname), (uintptr_t)syminfo.dli_saddr,
+				GUARD_NULL(syminfo.dli_fname), (uintptr_t)syminfo.dli_fbase);
+	} else {
+		nl_fptmf(out, "%s: " ADDR_FORMAT " (no matching symbol found).\n",
+				desc, (uintptr_t)addr);
+	}
+}
+
+/*
+ * Prints information about the given signal to the given file.  Useful in
+ * signal handlers set by sigaction().  Uses nl_fptmf() to add thread name and
+ * timestamp.  This function voids allocating memory, for safe use in signal
+ * handlers.
+ *
+ * Parameters:
+ *   out - Where to write the signal info
+ *   msg - Text to include at the beginning of the signal message printed
+ *   info - Detailed signal info, or NULL (see the sigaction() manual page)
+ *
+ * Example:
+ *     nl_print_signal("Crashing due to", &(siginfo_t){.si_signo = SIGSEGV})
+ *
+ * Output:
+ *     Crashing due to segmentation fault (11), code 0 (user-generated signal), at address 0x00000000.
+ *     Originating address: 0x00000000 (no matching symbol found).
+ */
+void nl_print_signal(FILE *out, char *msg, siginfo_t *info)
+{
+	if(CHECK_NULL(info)) {
+		return;
+	}
+
+	nl_fptmf(out, "%s %s (%d), code %d (%s), at address " ADDR_FORMAT ".\n",
+			msg, strsignal(info->si_signo), info->si_signo,
+			info->si_code, nl_strsigcode(info->si_signo, info->si_code), (uintptr_t)info->si_addr);
+
+	nl_print_address(out, "Originating address", info->si_addr);
+}
+
+/*
+ * Prints information about the given execution context to the given file.
+ * Useful in signal handlers set by sigaction().  Uses nl_fptmf() to add thread
+ * name and timestamp.  This function voids allocating memory, for safe use in
+ * signal handlers.
+ *
+ * Parameters:
+ *   out - Where to write the context info
+ *   ctx - Execution context info, or NULL (see the sigaction() manual page)
+ *
+ * Example:
+ *     ucontext_t ctx;
+ *     getcontext(&ctx);
+ *     nl_print_context(&ctx)
+ *
+ * Output (x86_64):
+ *     Instruction pointer: 0x12345678 (main@0x12345600 from ./blah@0x12340000).
+ *     Stack pointer: 0x87654000 (no matching symbol found).
+ */
+void nl_print_context(FILE *out, ucontext_t *ctx)
+{
+	if(CHECK_NULL(ctx)) {
+		return;
+	}
+
+#if defined(__arm__)
+	nl_print_address(out, "Program counter", (void *)ctx->uc_mcontext.arm_pc);
+	nl_print_address(out, "Link register", (void *)ctx->uc_mcontext.arm_lr);
+	nl_print_address(out, "Stack pointer", (void *)ctx->uc_mcontext.arm_sp);
+#elif defined(__x86_64__) || defined(__i386__)
+# ifdef __x86_64__
+	greg_t ip = ctx->uc_mcontext.gregs[REG_RIP];
+	greg_t sp = ctx->uc_mcontext.gregs[REG_RSP];
+# else /* __x86_64__ */
+	greg_t ip = ctx->uc_mcontext.gregs[REG_EIP];
+	greg_t sp = ctx->uc_mcontext.gregs[REG_ESP];
+# endif /* __x86_64__ */
+	nl_print_address(out, "Instruction pointer", (void *)ip);
+	nl_print_address(out, "Stack pointer", (void *)sp);
+#else /* __arm__ */
+	nl_fptmf(out, "Architecture not supported\n");
+#endif /* __arm__ */
+}
 
 /*
  * Prints the given stack trace (using nl_fptmf() for timestamps).  The trace
@@ -28,11 +125,11 @@ void nl_print_backtrace(FILE *out, void **trace, int count)
 		if(dladdr(trace[i], &info)) {
 			nl_fptmf(out, "%d: 0x%08" PRIxPTR " - %s@0x%08" PRIxPTR " - %s[0x%" PRIxPTR "]+0x%tx\n",
 					i, (uintptr_t)trace[i],
-					info.dli_fname, (uintptr_t)info.dli_fbase,
-					info.dli_sname, (uintptr_t)info.dli_saddr,
+					GUARD_NULL(info.dli_fname), (uintptr_t)info.dli_fbase,
+					GUARD_NULL(info.dli_sname), (uintptr_t)info.dli_saddr,
 					trace[i] - info.dli_saddr);
 		} else {
-			nl_fptmf(out, "%d: 0x%08zx - No symbol information\n", i, (size_t)trace[i]);
+			nl_fptmf(out, "%d: 0x%08" PRIxPTR " - No symbol information\n", i, (uintptr_t)trace[i]);
 		}
 	}
 }

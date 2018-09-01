@@ -1,6 +1,6 @@
 /*
  * Thread-related functions.
- * Copyright (C)2014 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2014, 2018 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -289,6 +289,108 @@ int nl_set_thread_priority(struct nl_thread *thread, int sched_class, int prio)
 	}
 
 	return 0;
+}
+
+/*
+ * Waits up to timeout_us microseconds to lock the given mutex, trying roughly
+ * every millisecond.  Returns 0 on success, EBUSY if the timeout expired, or a
+ * different error code if acquiring the lock failed.
+ */
+static int nl_timeout_lock(pthread_mutex_t *mutex, int timeout_us)
+{
+	// TODO: expose this function and add tests for it
+	int slept = 0;
+	int ret;
+
+	if(timeout_us <= 0) {
+		ret = pthread_mutex_lock(mutex);
+	} else {
+		do {
+			ret = pthread_mutex_trylock(mutex);
+			if(ret == EBUSY) {
+				nl_usleep(1000);
+				slept += 1000;
+			}
+		} while(slept < timeout_us && ret == EBUSY);
+	}
+
+	return ret;
+}
+
+/*
+ * Calls the given callback for each thread that was created in the given
+ * threading context (thus the main thread that created the context is
+ * excluded).
+ *
+ * If lock_timeout_us is greater than zero, then iteration will proceed anyway
+ * after approximately lock_timeout_us microseconds even if the thread list
+ * lock cannot be obtained.  This could happen if another thread is already
+ * running nl_destroy_thread_context(), and nl_iterate_threads() is called from
+ * a signal handler, for example.
+ *
+ * The list of threads should not be modified by the callback (no creation or
+ * joining of threads).
+ */
+void nl_iterate_threads(struct nl_thread_ctx *ctx, int lock_timeout_us, nl_thread_iterator cb, void *cb_data)
+{
+	int ret;
+
+	if(CHECK_NULL(ctx) || CHECK_NULL(cb)) {
+		return;
+	}
+
+	ret = nl_timeout_lock(&ctx->lock, lock_timeout_us);
+	if(ret) {
+		if(ret == EBUSY && lock_timeout_us > 0) {
+			ERROR_OUT("Warning: ignoring lock timeout when iterating threads\n");
+		} else {
+			ERROR_OUT("Error locking thread context lock for iteration: %d (%s)\n", ret, strerror(ret));
+			return;
+		}
+	}
+
+	struct nl_thread *t = ctx->threads;
+	while(t) {
+		cb(t, cb_data);
+		t = t->next;
+	}
+
+	ret = pthread_mutex_unlock(&ctx->lock);
+	if(ret) {
+		ERROR_OUT("Warning: error unlocking thread context lock after iteration: %d (%s)\n", ret, strerror(ret));
+	}
+}
+
+/*
+ * Callback for nl_signal_threads().  Signals one thread, then waits 25ms if
+ * there are more threads.
+ */
+static void nl_signal_one_thread(struct nl_thread *t, void *data)
+{
+	pthread_t self = pthread_self();
+	int signum = *(int *)data;
+
+	if(!pthread_equal(t->thread, self)) {
+		int ret = pthread_kill(t->thread, signum);
+		if(ret) {
+			ERROR_OUT("Error sending signal %d (%s) to thread %s: %d (%s)\n",
+					signum, strsignal(signum), t->name, ret, strerror(ret));
+		}
+
+		if(t->next) {
+			nl_usleep(25000);
+		}
+	}
+}
+
+/*
+ * Sends the given signal to all the threads in the given context, excluding
+ * the main thread that created the context and the current thread (if it's one
+ * of the threads in the context).  Waits 25ms between threads.
+ */
+void nl_signal_threads(struct nl_thread_ctx *ctx, int signum)
+{
+	nl_iterate_threads(ctx, 250000, nl_signal_one_thread, &signum);
 }
 
 /*

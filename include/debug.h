@@ -1,11 +1,54 @@
 /*
  * Functions used for debugging purposes (e.g. printing backtraces).
- * Copyright (C)2013 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2013, 2018 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #ifndef NLUTILS_DEBUG_H_
 #define NLUTILS_DEBUG_H_
 
+#include <signal.h>
 #include <execinfo.h>
+
+/*
+ * Prints information about the given signal to the given file.  Useful in
+ * signal handlers set by sigaction().  Uses nl_fptmf() to add thread name and
+ * timestamp.  This function voids allocating memory, for safe use in signal
+ * handlers.
+ *
+ * Parameters:
+ *   out - Where to write the signal info
+ *   msg - Text to include at the beginning of the signal message printed
+ *   info - Detailed signal info, or NULL (see the sigaction() manual page)
+ *
+ * Example:
+ *     nl_print_signal("Crashing due to", &(siginfo_t){.si_signo = SIGSEGV})
+ *
+ * Output:
+ *     Crashing due to segmentation fault (11), code 0 (user-generated signal), at address 0x00000000.
+ *     Originating address: 0x00000000 (no matching symbol found).
+ */
+void nl_print_signal(FILE *out, char *msg, siginfo_t *info);
+
+/*
+ * Prints information about the given execution context to the given file.
+ * Useful in signal handlers set by sigaction().  Uses nl_fptmf() to add thread
+ * name and timestamp.  This function voids allocating memory, for safe use in
+ * signal handlers.
+ *
+ * Parameters:
+ *   out - Where to write the context info
+ *   ctx - Execution context info, or NULL (see the sigaction() manual page)
+ *
+ * Example:
+ *     ucontext_t ctx;
+ *     getcontext(&ctx);
+ *     nl_print_context(&ctx)
+ *
+ * Output (x86_64):
+ *     Instruction pointer: 0x12345678 (main@0x12345600 from ./blah@0x12340000).
+ *     Frame pointer: 0x87654321 (no matching symbol found).
+ *     Stack pointer: 0x87654000 (no matching symbol found).
+ */
+void nl_print_context(FILE *out, ucontext_t *ctx);
 
 /*
  * Prints the given stack trace (using nl_fptmf() for timestamps).  The trace

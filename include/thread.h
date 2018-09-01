@@ -1,6 +1,6 @@
 /*
  * Thread-related functions.
- * Copyright (C)2015 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2015, 2018 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #ifndef NLUTILS_THREAD_H_
 #define NLUTILS_THREAD_H_
@@ -8,6 +8,12 @@
 #include <pthread.h>
 
 struct nl_thread_ctx;
+struct nl_thread;
+
+/*
+ * Callback function for nl_iterate_threads().
+ */
+typedef void (*nl_thread_iterator)(struct nl_thread *thread, void *cb_data);
 
 /*
  * Information about a single tracked thread.
@@ -87,6 +93,29 @@ int nl_join_thread(struct nl_thread *info, void **result);
  * on error.
  */
 int nl_set_thread_priority(struct nl_thread *thread, int sched_class, int prio);
+
+/*
+ * Calls the given callback for each thread that was created in the given
+ * threading context (thus the main thread that created the context is
+ * excluded).
+ *
+ * If lock_timeout_us is greater than zero, then iteration will proceed anyway
+ * after approximately lock_timeout_us microseconds even if the thread list
+ * lock cannot be obtained.  This could happen if another thread is already
+ * running nl_destroy_thread_context(), and nl_iterate_threads() is called from
+ * a signal handler, for example.
+ *
+ * The list of threads should not be modified by the callback (no creation or
+ * joining of threads).
+ */
+void nl_iterate_threads(struct nl_thread_ctx *ctx, int lock_timeout_us, nl_thread_iterator cb, void *cb_data);
+
+/*
+ * Sends the given signal to all the threads in the given context, excluding
+ * the main thread that created the context and the current thread (if it's one
+ * of the threads in the context).  Waits 25ms between threads.
+ */
+void nl_signal_threads(struct nl_thread_ctx *ctx, int signum);
 
 /*
  * Creates a priority inheritance mutex (PTHREAD_PRIO_INHERIT) in *mutex.  Pass
