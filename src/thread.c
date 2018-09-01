@@ -320,10 +320,16 @@ static int nl_timeout_lock(pthread_mutex_t *mutex, int timeout_us)
 /*
  * Calls the given callback for each thread that was created in the given
  * threading context (thus the main thread that created the context is
- * excluded).  If lock_timeout_us is greater than zero, then iteration will
- * proceed anyway after approximately lock_timeout_us microseconds even if the
- * thread list lock cannot be obtained.  The list of threads should not be
- * modified by the callback (no creation or joining of threads).
+ * excluded).
+ *
+ * If lock_timeout_us is greater than zero, then iteration will proceed anyway
+ * after approximately lock_timeout_us microseconds even if the thread list
+ * lock cannot be obtained.  This could happen if another thread is already
+ * running nl_destroy_thread_context(), and nl_iterate_threads() is called from
+ * a signal handler, for example.
+ *
+ * The list of threads should not be modified by the callback (no creation or
+ * joining of threads).
  */
 void nl_iterate_threads(struct nl_thread_ctx *ctx, int lock_timeout_us, nl_thread_iterator cb, void *cb_data)
 {
@@ -351,7 +357,7 @@ void nl_iterate_threads(struct nl_thread_ctx *ctx, int lock_timeout_us, nl_threa
 
 	ret = pthread_mutex_unlock(&ctx->lock);
 	if(ret) {
-		ERROR_OUT("Error unlocking thread context lock for iteration: %d (%s)\n", ret, strerror(ret));
+		ERROR_OUT("Warning: error unlocking thread context lock after iteration: %d (%s)\n", ret, strerror(ret));
 	}
 }
 

@@ -266,6 +266,7 @@ static int signal_tests(void)
 		return -1;
 	}
 
+	INFO_OUT("\tCreating thread contexts\n");
 	struct nl_thread_ctx *ctx1 = nl_create_thread_context();
 	struct nl_thread_ctx *ctx2 = nl_create_thread_context();
 
@@ -274,11 +275,10 @@ static int signal_tests(void)
 		return -1;
 	}
 
+	INFO_OUT("\tCreating threads\n");
 	nl_create_thread(ctx1, NULL, signal_test_first_thread, &(struct signal_test_info){.ctx = ctx1, .signum = SIGUSR1}, "C1 First", NULL);
 	nl_create_thread(ctx2, NULL, signal_test_first_thread, &(struct signal_test_info){.ctx = ctx2, .signum = SIGUSR2}, "C2 First", NULL);
 
-	(void)signal_test_other_threads; // XXX
-	/*
 	for(int i = 0; i < NUM_THREADS; i++) {
 		char name[16];
 		snprintf(name, 16, "C1T%d", i);
@@ -286,7 +286,10 @@ static int signal_tests(void)
 		snprintf(name, 16, "C2T%d", i);
 		nl_create_thread(ctx2, NULL, signal_test_other_threads, NULL, name, NULL);
 	}
-	*/
+
+	// Wait for iteration to start so nl_destroy_thread_context() doesn't
+	// hold the context lock; this could fail on a heavily loaded test host
+	nl_usleep(4000000);
 
 	// This waits for all threads to finish
 	nl_destroy_thread_context(ctx1);
@@ -303,7 +306,7 @@ static int signal_tests(void)
 		ret = -1;
 	}
 	if(ctx2_counts.usr1_count != 0 || ctx2_counts.usr2_count != NUM_THREADS) {
-		ERROR_OUT("Incorrect number of SIGUSR1/SIGUSR2 on first context.  Expected %d/%d, got %d/%d.\n",
+		ERROR_OUT("Incorrect number of SIGUSR1/SIGUSR2 on second context.  Expected %d/%d, got %d/%d.\n",
 				0, NUM_THREADS, ctx2_counts.usr1_count, ctx2_counts.usr2_count);
 		ret = -1;
 	}
