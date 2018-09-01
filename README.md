@@ -57,10 +57,108 @@ URL escaping and unescaping code was modified from public domain code by Fred
 Bulback.  Modified code is licensed under AGPLv3.  See `src/url.c`.
 
 
+# Common uses
+
+## Debugging
+
+For applications that run on a remote server or embedded hardware where it's not
+possible to attach a debugger to a running process, it's nice to get detailed
+information about crashes in the application logs.  The functions in `debug.h`
+make it easier to print a stack trace when an application receives an unexpected
+signal (e.g. `SIGSEGV`).  These originated in the knd app and were later moved
+to nlutils.
+
+An example is the quickest way to illustrate:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <nlutils/nlutils.h>
+
+// Unfortunately global state is the only option to pass data into a signal
+// handler, and signal handlers apply to the entire process
+static struct nl_thread_ctx *ctx;
+static volatile int crashing = 0;
+
+void handle_crash(int signum, siginfo_t *info, void *uctx)
+{
+  nl_print_signal(stderr, "Crashing due to", info);
+  nl_print_context(stderr, (ucontext_t *)uctx);
+  NL_PRINT_TRACE(stderr);
+
+  // Pass the signal to other threads so they can also print stack traces
+  // Note that this needs to check the main thread as well in practice
+  if(!crashing) {
+    // First thread to crash
+    crashing = 1;
+    nl_signal_threads(ctx, signum);
+    nl_usleep(250000);
+    exit(-1);
+  } else {
+    // Thread signalled by crashing thread
+    pthread_exit(NULL);
+  }
+}
+
+void *some_thread(void *data)
+{
+  (void)data; // unused parameter
+  nl_usleep(60000000);
+  return NULL;
+}
+
+int main(void)
+{
+  nl_set_threadname("Main thread");
+  // Error handling omitted for the sake of brevity
+  ctx = nl_create_thread_context();
+  sigaction(SIGSEGV, &(struct sigaction){.sa_sigaction = handle_crash, .sa_flags = SA_SIGINFO}, NULL);
+  nl_create_thread(ctx, NULL, some_thread, NULL, "Other thread", NULL);
+  pthread_kill(pthread_self(), SIGSEGV);
+  return -1; // Shouldn't be reached
+}
+```
+
+Compiling and running gives this output (note the use of `-rdynamic` to include
+symbol names for the backtrace):
+
+```bash
+gcc debug_example.c -o debug_example -O2 -Wall -Wextra -Werror -std=gnu99 -rdynamic -lnlutils -pthread
+./debug_example
+```
+
+```
+2018-08-31 20:21:43.398112 -0700 - Main thread - Crashing due to Segmentation fault (11), code -6 (tgkill-generated signal to thread), at address 0x3e800002192.
+2018-08-31 20:21:43.398259 -0700 - Main thread - Originating address: 0x3e800002192 (no matching symbol found).
+2018-08-31 20:21:43.398315 -0700 - Main thread - Instruction pointer: 0x7f2781b362d1 (pthread_kill@0x7f2781b362a0 from /lib/x86_64-linux-gnu/libpthread.so.0@0x7f2781b27000).
+2018-08-31 20:21:43.398350 -0700 - Main thread - Stack pointer: 0x7ffddb779ca0 (no matching symbol found).
+2018-08-31 20:21:43.398625 -0700 - Main thread - 6 backtrace elements:
+2018-08-31 20:21:43.398659 -0700 - Main thread - 0: 0x00400c17 - ./debug_example@0x00400000 - handle_crash[0x400bd0]+0x47
+2018-08-31 20:21:43.398694 -0700 - Main thread - 1: 0x7f2781b39890 - /lib/x86_64-linux-gnu/libpthread.so.0@0x7f2781b27000 - [null][0x0]+0x7f2781b39890
+2018-08-31 20:21:43.398749 -0700 - Main thread - 2: 0x7f2781b362d1 - /lib/x86_64-linux-gnu/libpthread.so.0@0x7f2781b27000 - pthread_kill[0x7f2781b362a0]+0x31
+2018-08-31 20:21:43.398771 -0700 - Main thread - 3: 0x00400d37 - ./debug_example@0x00400000 - main[0x400c90]+0xa7
+2018-08-31 20:21:43.398843 -0700 - Main thread - 4: 0x7f2781757b97 - /lib/x86_64-linux-gnu/libc.so.6@0x7f2781736000 - __libc_start_main[0x7f2781757ab0]+0xe7
+2018-08-31 20:21:43.398866 -0700 - Main thread - 5: 0x00400b0a - ./debug_example@0x00400000 - _start[0x400ae0]+0x2a
+2018-08-31 20:21:43.398926 -0700 - Other thread - Crashing due to Segmentation fault (11), code -6 (tgkill-generated signal to thread), at address 0x3e800002192.
+2018-08-31 20:21:43.399009 -0700 - Other thread - Originating address: 0x3e800002192 (no matching symbol found).
+2018-08-31 20:21:43.399055 -0700 - Other thread - Instruction pointer: 0x7f2781b38c60 (__nanosleep@0x7f2781b38c20 from /lib/x86_64-linux-gnu/libpthread.so.0@0x7f2781b27000).
+2018-08-31 20:21:43.399089 -0700 - Other thread - Stack pointer: 0x7f27810f4e80 (no matching symbol found).
+2018-08-31 20:21:43.399158 -0700 - Other thread - 7 backtrace elements:
+2018-08-31 20:21:43.399186 -0700 - Other thread - 0: 0x00400c17 - ./debug_example@0x00400000 - handle_crash[0x400bd0]+0x47
+2018-08-31 20:21:43.399228 -0700 - Other thread - 1: 0x7f2781b39890 - /lib/x86_64-linux-gnu/libpthread.so.0@0x7f2781b27000 - [null][0x0]+0x7f2781b39890
+2018-08-31 20:21:43.399274 -0700 - Other thread - 2: 0x7f2781b38c60 - /lib/x86_64-linux-gnu/libpthread.so.0@0x7f2781b27000 - __nanosleep[0x7f2781b38c20]+0x40
+2018-08-31 20:21:43.399310 -0700 - Other thread - 3: 0x7f2781d580d5 - /usr/local/lib/libnlutils.so.12@0x7f2781d46000 - nl_usleep[0x7f2781d58050]+0x85
+2018-08-31 20:21:43.399336 -0700 - Other thread - 4: 0x00400c8b - ./debug_example@0x00400000 - some_thread[0x400c80]+0xb
+2018-08-31 20:21:43.399386 -0700 - Other thread - 5: 0x7f2781b2e6db - /lib/x86_64-linux-gnu/libpthread.so.0@0x7f2781b27000 - [null][0x0]+0x7f2781b2e6db
+2018-08-31 20:21:43.399534 -0700 - Other thread - 6: 0x7f278185788f - /lib/x86_64-linux-gnu/libc.so.6@0x7f2781736000 - clone[0x7f2781857850]+0x3f
+```
+
+
 # Subdirectories
 
 - `include/` -- Header files.  Read these to see what functions are available.
   - `nl_time.h` -- Time-related functions, such as arithmetic on `timespec`.
+  - `debug.h` -- Debugging-related functions, such as for printing stack traces.
 - `src/` - Library source code.
 - `programs/` -- Programs installed on embedded and dev systems, but not included
   in Debian packages (see CMakeLists.txt files for details).
