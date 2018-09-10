@@ -4,9 +4,9 @@
 # See http://www.cmake.org/Wiki/CMake_Cross_Compiling
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)
-set(CMAKE_C_COMPILER arm-none-linux-gnueabi-gcc)
-set(CMAKE_CXX_COMPILER arm-none-linux-gnueabi-g++)
-set(CMAKE_FIND_ROOT_PATH $ENV{HOME}/CodeSourcery/Sourcery_G++_Lite/arm-none-linux-gnueabi/libc $ENV{HOME}/CodeSourcery/Sourcery_G++_Lite/arm-none-linux-gnueabi $ENV{DEBIAN_ROOT} $ENV{LIBS_ROOT} $ENV{ROOT})
+set(CMAKE_C_COMPILER arm-linux-gnueabi-gcc)
+set(CMAKE_CXX_COMPILER arm-linux-gnueabi-g++)
+set(CMAKE_FIND_ROOT_PATH $ENV{DEBIAN_ROOT} $ENV{LIBS_ROOT} $ENV{ROOT})
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
