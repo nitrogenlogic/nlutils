@@ -45,6 +45,7 @@ ruby1.9.1,\
 ruby,\
 libudev-dev,\
 libevent-dev,\
+libusb-1.0-0-dev,\
 ${EXTRA_PACKAGES:+,$EXTRA_PACKAGES}
 "
 
