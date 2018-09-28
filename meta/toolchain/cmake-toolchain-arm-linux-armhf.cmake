@@ -20,6 +20,6 @@ add_definitions(-DNL_EMBEDDED)
 set(NL_EMBEDDED true)
 
 # TODO: Create CMake find scripts instead of using hard-coded include and library paths
-set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/local/lib -L$ENV{LIBS_ROOT}/usr/lib -L $ENV{DEBIAN_ROOT}/usr/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
-set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/local/lib -L$ENV{LIBS_ROOT}/usr/lib -L $ENV{DEBIAN_ROOT}/usr/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/local/lib -L$ENV{LIBS_ROOT}/usr/lib -L $ENV{DEBIAN_ROOT}/usr/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
+set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/lib -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
+set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/lib -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS    "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/lib -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
