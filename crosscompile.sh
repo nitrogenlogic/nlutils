@@ -40,6 +40,8 @@
 #
 #	ROOT=/tmp/nofp-root LIBS_ROOT=/tmp/nofp-libs ./crosscompile.sh nofp
 
+set -e
+
 CROSS_BASE=${HOME}/devel/crosscompile
 DEBIAN_VERSION=squeeze
 
@@ -49,7 +51,6 @@ NCPUS=$(grep -i 'processor.*:' /proc/cpuinfo | wc -l)
 if [ "$#" -eq 0 ]; then
 	echo "Building all embedded targets.  Press Ctrl-C in 5 seconds to abort."
 	sleep 5
-	set -e
 	"$0" neon
 	"$0" nofp
 	# TODO: enable when automatic libs are available
@@ -200,6 +201,18 @@ if [ "$BUILD_LIBS" -eq 1 ]; then
 
 	make -j$NCPUS
 	make -j$NCPUS install
+
+	# Install into cross-package root for building other packages e.g. knd
+	cmake \
+		-D CMAKE_TOOLCHAIN_FILE=${TOOLCHAIN} \
+		-D CMAKE_INSTALL_PREFIX=${DEBIAN_ROOT}-build/usr/local \
+		-D CMAKE_BUILD_TYPE=Release \
+		-D NL_INSTALL_HEADERS=true \
+		-D INSTALLDIR=${DEBIAN_ROOT}-build \
+		..
+
+	make -j$NCPUS
+	sudo make -j$NCPUS install
 
 	cd ..
 fi

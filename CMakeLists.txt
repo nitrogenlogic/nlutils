@@ -18,8 +18,7 @@ project(NLUTILS)
 # Prevent absolute paths from being compiled in
 set(CMAKE_USE_RELATIVE_PATHS true)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --std=c99 -D_XOPEN_SOURCE=700 -D_ISOC99_SOURCE -D_GNU_SOURCE -fPIC -pthread -Wall -Wextra -Werror -pipe -DNLUTILS_VERSION=\"\\\"${NLUTILS_VERSION}\\\"\"")
-add_definitions(-D_FILE_OFFSET_BITS=64 -DLARGEFILE_SOURCE=1)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --std=c99 -D_XOPEN_SOURCE=700 -D_ISOC99_SOURCE -D_GNU_SOURCE -fPIC -pthread -Wall -Wextra -Werror -pipe -DNLUTILS_VERSION=\"\\\"${NLUTILS_VERSION}\\\"\" -D_FILE_OFFSET_BITS=64 -DLARGEFILE_SOURCE=1")
 
 set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_DEBUG DEBUG=1)
 
