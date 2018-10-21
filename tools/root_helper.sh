@@ -170,7 +170,7 @@ remount_with_dev
 
 
 ### Download and unpack Debian packages
-if [ ! -d "$ROOTPATH/etc" -o "${1:-}" = "--rebuild" -o "${2:-}" = "--rebuild" ]; then
+if [ ! -d "$ROOTPATH/etc/apt" -o "${1:-}" = "--rebuild" -o "${2:-}" = "--rebuild" ]; then
 	printf "\n\033[1mBootstrapping with debootstrap\033[0m\n"
 	sudo rm -rf "${ROOTPATH}"/{,.[^.]}*
 
