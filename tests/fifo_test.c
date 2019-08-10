@@ -129,6 +129,13 @@ int test_next(struct nl_fifo *fifo, const struct nl_fifo_element **iter, char *e
 	return error;
 }
 
+void test_clear_cb(__attribute__((unused)) void *element, void *user_data)
+{
+	int *counter = user_data;
+	printf("In the clear callback with %d\n", *counter);
+	(*counter)++;
+}
+
 int main(void)
 {
 	char *str1 = "Test 1";
@@ -138,6 +145,8 @@ int main(void)
 	const struct nl_fifo_element *iter;
 	struct nl_fifo *f1, *f2;
 	int i;
+
+	int clear_counter;
 
 	// Test destruction immediately after creation with no manipulation
 	INFO_OUT("Testing destroying unmodified FIFO.\n");
@@ -261,8 +270,14 @@ int main(void)
 		return -1;
 	}
 
-	// Ensure no crash occurs when clearing an empty FIFO
+	// Ensure no crash occurs when clearing an empty FIFO with or without callback
+	clear_counter = 0;
 	nl_fifo_clear(f1);
+	nl_fifo_clear_cb(f1, test_clear_cb, &clear_counter);
+	if(clear_counter != 0) {
+		ERR(f1, "Clearing 0 elements resulted in change to clear counter.\n");
+		return -1;
+	}
 
 	// Add/remove many elements to/from the FIFO
 	INFO_OUT("Testing many element sequencing.\n");
@@ -407,9 +422,14 @@ int main(void)
 		}
 	}
 
-	nl_fifo_clear(f1);
+	clear_counter = 0;
+	nl_fifo_clear_cb(f1, test_clear_cb, &clear_counter);
 	if(f1->count != 0) {
 		ERR(f1, "Count is not zero after clearing.\n");
+		return -1;
+	}
+	if(clear_counter != 100) {
+		ERR(f1, "Element callback was called %d times instead of 100\n", clear_counter);
 		return -1;
 	}
 
@@ -581,6 +601,10 @@ int main(void)
 	}
 
 	nl_fifo_destroy(f1);
+	
+
+	// Test clearing a NULL fifo (double-check behavior with Valgrind to be sure)
+	nl_fifo_clear(NULL);
 
 
 	INFO_OUT("FIFO tests completed successfully.\n");
