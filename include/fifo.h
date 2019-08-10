@@ -1,6 +1,6 @@
 /*
  * fifo.h - A generic FIFO implementation using a linked list.
- * Copyright (C)2009, 2014 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2009, 2014-2019 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #ifndef NLUTILS_FIFO_H_
 #define NLUTILS_FIFO_H_
@@ -89,9 +89,20 @@ int nl_fifo_remove(struct nl_fifo *l, void *data);
 void *nl_fifo_next(struct nl_fifo *l, const struct nl_fifo_element **iter);
 
 /*
- * Removes all elements from the fifo.
+ * Removes all elements from the FIFO.  Note that this does not free the
+ * elements stored in the FIFO.
+ *
+ * This is not a thread-safe operation.
  */
 void nl_fifo_clear(struct nl_fifo *l);
+
+/*
+ * Removes all elements from the FIFO, calling the given callback (if not NULL)
+ * for each element first.  This may be used e.g. to free memory.
+ *
+ * This is not a thread-safe operation.
+ */
+void nl_fifo_clear_cb(struct nl_fifo *l, void (*cb)(void *el, void *user_data), void *user_data);
 
 
 #ifdef __cplusplus
