@@ -356,6 +356,18 @@ static int check_compare(int expected, int actual, char *compname, char *testnam
 	return 0;
 }
 
+// Compares to within one roundmul-th
+static int check_convert_dbl(double expected, double actual, int roundmul, char *convname, char *testname)
+{
+	if (round(expected * roundmul) != round(actual * roundmul)) {
+		ERROR_OUT("Expected %f, got %f for %s conversion on %s\n",
+				expected, actual, convname, testname);
+		return -1;
+	}
+
+	return 0;
+}
+
 // Returns integer nanoseconds for the given normalized timespec
 static int64_t ts_to_nano(struct timespec ts)
 {
@@ -504,15 +516,70 @@ static void explicit_operators(void)
 	}
 }
 
-int operator_tests(void)
+static void conversions(void)
 {
-	INFO_OUT("Testing timespec arithmetic and comparison operators\n");
-	numeric_operators();
-	explicit_operators();
-	return failures != 0;
+	double v;
+
+	// timeval
+	v = nl_timeval_to_double((struct timeval){.tv_sec = 0, .tv_usec = 0});
+	failures += !!check_convert_dbl(0, v, 1000000, "nl_timeval_to_double", "at time zero");
+
+	v = nl_timeval_to_double((struct timeval){.tv_sec = 0, .tv_usec = 1});
+	failures += !!check_convert_dbl(0.000001, v, 1000000, "nl_timeval_to_double", "at one microsecond past epoch");
+
+	v = nl_timeval_to_double((struct timeval){.tv_sec = 1000000000, .tv_usec = 123456});
+	failures += !!check_convert_dbl(1000000000.123456, v, 1000000, "nl_timeval_to_double", "precision at one billion");
+
+	v = nl_timeval_to_double((struct timeval){.tv_sec = 4000000000, .tv_usec = 123456});
+	failures += !!check_convert_dbl(4000000000.123456, v, 1000000, "nl_timeval_to_double", "precision at four billion");
+
+	// timespec
+	v = nl_timespec_to_double((struct timespec){.tv_sec = 0, .tv_nsec = 0});
+	failures += !!check_convert_dbl(0, v, 1000000000, "nl_timespec_to_double", "at time zero");
+	failures += !!check_timetest(
+			(struct timespec){.tv_sec = 0, .tv_nsec = 0},
+			nl_double_to_timespec(v),
+			"nl_double_to_timespec",
+			"at time zero"
+			);
+
+	v = nl_timespec_to_double((struct timespec){.tv_sec = 0, .tv_nsec = 1});
+	failures += !!check_convert_dbl(0.000000001, v, 1000000000, "nl_timespec_to_double", "at one nanosecond past epoch");
+	failures += !!check_timetest(
+			(struct timespec){.tv_sec = 0, .tv_nsec = 1},
+			nl_double_to_timespec(v),
+			"nl_double_to_timespec",
+			"at one nanosecond past epoch"
+			);
+
+	v = nl_timespec_to_double((struct timespec){.tv_sec = 1000000000, .tv_nsec = 123456789});
+	failures += !!check_convert_dbl(1000000000.1234568, v, 1000000000, "nl_timespec_to_double", "precision at one billion");
+	failures += !!check_timetest(
+			(struct timespec){.tv_sec = 1000000000, .tv_nsec = 123456835}, // TODO: can this vary by platform?
+			nl_double_to_timespec(v),
+			"nl_double_to_timespec",
+			"precision at one billion"
+			);
+
+	v = nl_timespec_to_double((struct timespec){.tv_sec = 4000000000, .tv_nsec = 123456789});
+	failures += !!check_convert_dbl(4000000000.123457, v, 1000000000, "nl_timespec_to_double", "precision at four billion");
+	failures += !!check_timetest(
+			(struct timespec){.tv_sec = 4000000000, .tv_nsec = 123456954},
+			nl_double_to_timespec(v),
+			"nl_double_to_timespec",
+			"precision at one billion"
+			);
 }
 
-int clock_tests(void)
+void operator_tests(void)
+{
+	INFO_OUT("Testing timespec arithmetic, comparison, and conversion operators\n");
+	numeric_operators();
+	explicit_operators();
+	conversions();
+}
+
+void clock_tests(void)
 {
 	INFO_OUT("Testing functions for interacting with clocks and sleeping\n");
 
@@ -530,12 +597,12 @@ int clock_tests(void)
 
 	if(nl_compare_timespec(before, now) != -1) {
 		ERROR_OUT("Expected before time was not before nl_usleep completion\n");
-		return -1;
+		failures += 1;
 	}
 
 	if(nl_compare_timespec(after, now) != -1) {
 		ERROR_OUT("Expected after time was not after nl_usleep completion\n");
-		return -1;
+		failures += 1;
 	}
 
 	struct timespec diff = nl_sub_timespec(
@@ -544,15 +611,17 @@ int clock_tests(void)
 			);
 	if(diff.tv_sec || imaxabs(diff.tv_nsec) > 100000000) {
 		ERROR_OUT("Sleep duration is off by more than 100ms\n");
-		return -1;
+		failures += 1;
 	}
-
-	return 0;
 }
 
 int main(void)
 {
-	if(operator_tests() || clock_tests()) {
+	operator_tests();
+	clock_tests();
+
+	if (failures) {
+		ERROR_OUT("There were %d test failures.\n", failures);
 		return -1;
 	}
 

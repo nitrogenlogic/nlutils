@@ -12,12 +12,13 @@
  * is between -1 and 0 should use -1 for tv_sec, and a positive value for
  * tv_nsec between 0 and 1000000000.
  *
- * Copyright (C)2015 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2015-2020 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #ifndef NLUTILS_TIME_H_
 #define NLUTILS_TIME_H_
 
 #include <time.h>
+#include <math.h>
 
 /*
  * Evaluates to true if a >= b, where a and b are both positive, or in positive
@@ -199,6 +200,43 @@ NLUTILS_INLINE int nl_clock_fromnow(const clockid_t clock_id, struct timespec * 
 	*target = nl_add_timespec(ts, from_now);
 
 	return 0;
+}
+
+/*
+ * Converts a timeval to a double value of seconds since the epoch.
+ *
+ * The further from the epoch, the less precision the result will have.  In
+ * 2038 when a 32-bit integer timestamp would overflow, there will be about
+ * half a microsecond to a microsecond of precision.
+ */
+NLUTILS_INLINE double nl_timeval_to_double(const struct timeval tv)
+{
+	return tv.tv_sec + 0.000001 * tv.tv_usec;
+}
+
+/*
+ * Converts a timespec to a double value of seconds since the epoch.
+ *
+ * The further from the epoch, the less precision the result will have.  In
+ * 2038 when a 32-bit integer timestamp would overflow, there will be about
+ * half a microsecond to a microsecond of precision.
+ */
+NLUTILS_INLINE double nl_timespec_to_double(const struct timespec tv)
+{
+	return tv.tv_sec + 0.000000001 * tv.tv_nsec;
+}
+
+/*
+ * Converts a double value of seconds since the epoch to a timespec.
+ */
+NLUTILS_INLINE struct timespec nl_double_to_timespec(const double epoch_seconds)
+{
+	long intsec = epoch_seconds;
+
+	return (struct timespec){
+		.tv_sec = intsec,
+		.tv_nsec = (long)((epoch_seconds - intsec) * 1000000000)
+	};
 }
 
 /*
