@@ -19,6 +19,7 @@
 
 #include <time.h>
 #include <math.h>
+#include <sys/time.h>
 
 /*
  * Evaluates to true if a >= b, where a and b are both positive, or in positive
