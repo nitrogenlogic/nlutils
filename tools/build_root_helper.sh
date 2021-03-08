@@ -79,17 +79,20 @@ sudo git -C "${ROOTPATH}/${CLONEPATH}" clone --single-branch "${BASEDIR}" "$PROJ
 sudo_root sh -c "cd ${CLONEPATH}/${PROJECT} && sh -c \"$LOCAL_BUILD\""
 
 # Build the package
-PKGDIR="${CLONEPATH}" sudo_root "${CLONEPATH}/${PROJECT}/meta/make_pkg.sh"
-PKGDIR="$ORIG_PKGDIR"
+if [ "$PACKAGE" '!=' "0" ]; then
+	PKGDIR="${CLONEPATH}" sudo_root "${CLONEPATH}/${PROJECT}/meta/make_pkg.sh"
+	PKGDIR="$ORIG_PKGDIR"
 
-# Copy release version update back into project directory
-GITREMOTE="build-$$-$(date --iso-8601=ns | tr -cd 0-9-)"
-show_run git remote add -t "$BRANCH" "$GITREMOTE" "${ROOTPATH}/${CLONEPATH}/${PROJECT}"
-show_run git pull "$GITREMOTE" "$BRANCH"
-show_run git remote remove "$GITREMOTE"
+	# Copy release version update back into project directory
+	GITREMOTE="build-$$-$(date --iso-8601=ns | tr -cd 0-9-)"
+	show_run git remote add -t "$BRANCH" "$GITREMOTE" "${ROOTPATH}/${CLONEPATH}/${PROJECT}"
+	show_run git pull "$GITREMOTE" "$BRANCH"
+	show_run git remote remove "$GITREMOTE"
 
-# Move package files to their final destination and clean up
-printf "\n\033[35mCopying package files to $PKGDIR/\033[0m\n"
-mkdir -p "$PKGDIR/"
-cp -v -- "${ROOTPATH}${CLONEPATH}"/*.deb "$PKGDIR/"
+	# Move package files to their final destination and clean up
+	printf "\n\033[35mCopying package files to $PKGDIR/\033[0m\n"
+	mkdir -p "$PKGDIR/"
+	cp -v -- "${ROOTPATH}${CLONEPATH}"/*.{deb,tar.*,gem} "$PKGDIR/"
+fi
+
 sudo_root rm -rf "$CLONEPATH"

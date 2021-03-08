@@ -46,11 +46,14 @@ logrotate,\
 cron\
 "
 
+printf "\033[1;33m\n\nBuilding base root\033[0m\n\n"
 . "${BASEDIR}/tools/root_helper.sh"
-. "${BASEDIR}/tools/build_root_helper.sh"
+
+printf "\033[1;33m\n\nBuilding build root\033[0m\n\n"
+PACKAGE=0 ROOT_SUFFIX=${ROOT_SUFFIX:+$ROOT_SUFFIX-}build . "${BASEDIR}/tools/build_root_helper.sh"
 
 ### Set hostname and other settings
-echo "Configuring target system settings"
+printf "\033[1;33m\n\nConfiguring target system settings\033[0m\n\n"
 echo logic-controller | pipetoroot "/etc/hostname"
 echo LANG=C | pipetoroot "/etc/default/locale"
 echo | pipetoroot "/etc/udev/rules.d/75-persistent-net-generator.rules"
