@@ -174,7 +174,7 @@ if [ ! -d "$ROOTPATH/etc/apt" -o "${1:-}" = "--rebuild" -o "${2:-}" = "--rebuild
 	sudo cp "$QEMU" "$ROOTPATH/$QEMU"
 
 	# Run bootstrap
-	sudo debootstrap --foreign --arch="$ARCH" --variant=buildd --components="main,contrib,non-free" --include="$PACKAGES" "$RELEASE" "$ROOTPATH" "$MIRROR"
+	sudo debootstrap --foreign --arch="$ARCH" --variant=minbase --components="main,contrib,non-free" --include="$PACKAGES" "$RELEASE" "$ROOTPATH" "$MIRROR"
 	sudo_root /debootstrap/debootstrap --second-stage
 
 	sudo_root /usr/bin/apt-get clean
