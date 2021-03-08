@@ -134,10 +134,10 @@ sudo chroot ${ROOTPATH} /sbin/ldconfig
 sudo find "${ROOTPATH}/var/log" -type f -print -exec sh -c "dd if=/dev/null of={} &> /dev/null" \;
 sudo rm "${ROOTPATH}/${QEMU}"
 
-
-### Build UBIFS and UBI images
-echo "Building UBI image"
-cat > "$UBICFG" <<EOF_UBI
+if [ "$PACKAGE" != '0' ]; then
+	### Build UBIFS and UBI images
+	echo "Building UBI image"
+	cat > "$UBICFG" <<EOF_UBI
 [rootfs]
 mode=ubi
 image=${FSIMAGE}
@@ -148,15 +148,16 @@ vol_name=rootfs
 vol_flags=autoresize
 EOF_UBI
 
-# For some unfathomable reason, mkfs.ubifs removed the option to force the root
-# inode's permissions to root:root 755.
-sudo chown root:root "$ROOTPATH"
-sudo chmod 755 "$ROOTPATH"
+	# For some unfathomable reason, mkfs.ubifs removed the option to force the root
+	# inode's permissions to root:root 755.
+	sudo chown root:root "$ROOTPATH"
+	sudo chmod 755 "$ROOTPATH"
 
-DEBIAN_FRONTEND=noninteractive sudo apt-get install --no-install-recommends -y mtd-utils
-sudo mkfs.ubifs -v -r "$ROOTPATH" -m 2048 -e 129024 -c 4096 -o "$FSIMAGE" -x "favor_lzo"
-sudo ubinize -v -o "$UBI" -m 2048 -p 128KiB -s 512 "$UBICFG"
-sudo chown `id -u`:`id -g` "$UBI" "$FSIMAGE"
-rm "$UBICFG"
+	DEBIAN_FRONTEND=noninteractive sudo apt-get install --no-install-recommends -y mtd-utils
+	sudo mkfs.ubifs -v -r "$ROOTPATH" -m 2048 -e 129024 -c 4096 -o "$FSIMAGE" -x "favor_lzo"
+	sudo ubinize -v -o "$UBI" -m 2048 -p 128KiB -s 512 "$UBICFG"
+	sudo chown `id -u`:`id -g` "$UBI" "$FSIMAGE"
+	rm "$UBICFG"
 
-echo "UBI image built in '$UBI'"
+	echo "UBI image built in '$UBI'"
+fi
