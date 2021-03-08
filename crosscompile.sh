@@ -66,24 +66,24 @@ TARGET="$1"
 case "$TARGET" in
 	neon)
 		TOOLCHAIN=${BASEDIR}/meta/toolchain/cmake-toolchain-arm-linux-neon.cmake
-		DEFAULT_ROOT=${CROSS_BASE}/cross-root-arm-neon
-		DEFAULT_LIBS_ROOT=${CROSS_BASE}/cross-libs-arm-neon
+		DEFAULT_ROOT=${CROSS_BASE}/cross-root-arm-neon-${DEBIAN_VERSION}
+		DEFAULT_LIBS_ROOT=${CROSS_BASE}/cross-libs-arm-neon-${DEBIAN_VERSION}
 		DEBIAN_ARCH=armel
 		ARCH=armv7l
 		;;
 
 	nofp)
 		TOOLCHAIN=${BASEDIR}/meta/toolchain/cmake-toolchain-arm-linux-nofp.cmake
-		DEFAULT_ROOT=${CROSS_BASE}/cross-root-arm-nofp
-		DEFAULT_LIBS_ROOT=${CROSS_BASE}/cross-libs-arm-nofp
+		DEFAULT_ROOT=${CROSS_BASE}/cross-root-arm-nofp-${DEBIAN_VERSION}
+		DEFAULT_LIBS_ROOT=${CROSS_BASE}/cross-libs-arm-nofp-${DEBIAN_VERSION}
 		DEBIAN_ARCH=armel
 		ARCH=armv5tel
 		;;
 
 	armhf)
 		TOOLCHAIN=${BASEDIR}/meta/toolchain/cmake-toolchain-arm-linux-armhf.cmake
-		DEFAULT_ROOT=${CROSS_BASE}/cross-root-arm-armhf
-		DEFAULT_LIBS_ROOT=${CROSS_BASE}/cross-libs-arm-armhf
+		DEFAULT_ROOT=${CROSS_BASE}/cross-root-arm-armhf-${DEBIAN_VERSION}
+		DEFAULT_LIBS_ROOT=${CROSS_BASE}/cross-libs-arm-armhf-${DEBIAN_VERSION}
 		DEBIAN_ARCH=armhf
 		ARCH=armv7l
 		;;
@@ -169,8 +169,8 @@ export DEBIAN_ROOT=${CROSS_BASE}/debian-$DEBIAN_VERSION-root-$DEBIAN_ARCH
 export LIBS_ROOT
 export ROOT
 
-mkdir -p "$ROOT/usr/lib" "$ROOT/usr/local/lib"
-mkdir -p "$LIBS_ROOT/usr/lib" "$LIBS_ROOT/usr/local/lib"
+mkdir -p "$ROOT/usr/lib/arm-linux-gnueabi" "$ROOT/usr/local/lib"
+mkdir -p "$LIBS_ROOT/usr/lib/arm-linux-gnueabi" "$LIBS_ROOT/usr/local/lib"
 
 cmake \
 	-D CMAKE_TOOLCHAIN_FILE=${TOOLCHAIN} \

@@ -1,5 +1,10 @@
 # CMake toolchain file for Sheeva and related ARMv5 processors with no FPU
-# Copyright (C)2011 Mike Bourgeous.  Released under AGPLv3 in 2018.
+# Copyright (C)2011-2020 Mike Bourgeous.  Released under AGPLv3 in 2018.
+
+# This is pretty hacked together to use a local cross-compiler with headers and
+# libraries from an armel chroot.  It might be better to use Docker to build a
+# native container out of the target Debian version and use its standard
+# cross-compiling setup.
 
 # See http://www.cmake.org/Wiki/CMake_Cross_Compiling
 set(CMAKE_SYSTEM_NAME Linux)
@@ -12,7 +17,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-set(CMAKE_C_FLAGS "-march=armv5te -mtune=xscale -fsingle-precision-constant -I$ENV{DEBIAN_ROOT}/usr/include -I$ENV{DEBIAN_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/include -I$ENV{LIBS_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/local/include -I$ENV{ROOT}/usr/include -I$ENV{ROOT}/usr/local/include" CACHE STRING "C compiler flags" FORCE)
+set(CMAKE_C_FLAGS "-march=armv5te -mtune=xscale -fsingle-precision-constant -nostdinc -nostdinc++ -I$ENV{DEBIAN_ROOT}/usr/include -I$ENV{DEBIAN_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{DEBIAN_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/include -I$ENV{LIBS_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{LIBS_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{LIBS_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/local/include -I$ENV{ROOT}/usr/include -I$ENV{ROOT}/usr/include/arm-linux-gnueabi -I$ENV{ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{ROOT}/usr/local/include" CACHE STRING "C compiler flags" FORCE)
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 set(CMAKE_C_FLAGS_MINSIZEREL "-O2")
 
