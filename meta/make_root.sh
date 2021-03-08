@@ -47,6 +47,7 @@ cron\
 "
 
 . "${BASEDIR}/tools/root_helper.sh"
+. "${BASEDIR}/tools/build_root_helper.sh"
 
 ### Set hostname and other settings
 echo "Configuring target system settings"

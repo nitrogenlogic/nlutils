@@ -165,7 +165,7 @@ rm -rf "$ROOT_BUILD"
 mkdir "$ROOT_BUILD"
 cd "$ROOT_BUILD"
 
-export DEBIAN_ROOT=${CROSS_BASE}/debian-$DEBIAN_VERSION-root-$DEBIAN_ARCH
+export DEBIAN_ROOT=${CROSS_BASE}/debian-$DEBIAN_VERSION-root-$DEBIAN_ARCH-build
 export LIBS_ROOT
 export ROOT
 
@@ -205,10 +205,10 @@ if [ "$BUILD_LIBS" -eq 1 ]; then
 	# Install into cross-package root for building other packages e.g. knd
 	cmake \
 		-D CMAKE_TOOLCHAIN_FILE=${TOOLCHAIN} \
-		-D CMAKE_INSTALL_PREFIX=${DEBIAN_ROOT}-build/usr/local \
+		-D CMAKE_INSTALL_PREFIX=${DEBIAN_ROOT}/usr/local \
 		-D CMAKE_BUILD_TYPE=Release \
 		-D NL_INSTALL_HEADERS=true \
-		-D INSTALLDIR=${DEBIAN_ROOT}-build \
+		-D INSTALLDIR=${DEBIAN_ROOT} \
 		..
 
 	make -j$NCPUS
