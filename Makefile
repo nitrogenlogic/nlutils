@@ -14,7 +14,7 @@ clean: init
 	sh -c "cd build-$$(uname -m) && make -j$(ncpus) clean"
 
 install: init
-	sh -c "cd build-$$(uname -m) && make -j$(ncpus) install && ldconfig"
+	sh -c "cd build-$$(uname -m) && make install && ldconfig"
 
 init:
 	sh -c "mkdir -p build-$$(uname -m)"

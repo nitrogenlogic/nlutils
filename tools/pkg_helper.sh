@@ -108,7 +108,7 @@ NCPUS="$(grep -i 'processor.*:' /proc/cpuinfo | wc -l)"
 # Build vars
 BASEDIR="${BASEDIR:-"$(readlink -m "$(dirname "$0")/..")"}"
 BUILDDIR="${BUILDDIR:-"$BASEDIR/build-pkg-$VERSION"}"
-INSTALL_CMD="${INSTALL_CMD:-"make -C $BUILDDIR -j$NCPUS install"}"
+INSTALL_CMD="${INSTALL_CMD:-"make -C $BUILDDIR install"}"
 
 
 printf "\n\033[36mBuilding \033[1m$PKGNAME\033[0;36m for \033[1m$NAME\033[0;36m in \033[1m$PKGDIR\033[0m\n"
