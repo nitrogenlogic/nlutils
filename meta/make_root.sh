@@ -18,7 +18,7 @@ BASEDIR="$(readlink -m "$(dirname "$0")/..")"
 ARCH=${ARCH:-armel}
 
 # Debian version name
-RELEASE=${RELEASE:-squeeze}
+RELEASE=${RELEASE:-stretch}
 
 # Output file for root filesystem image
 FSIMAGE="$HOME/devel/crosscompile/ubifs-${RELEASE}-${ARCH}.img"
@@ -36,9 +36,9 @@ daemontools,\
 ntp,\
 ntpdate,\
 vsftpd,\
-thttpd,\
+lighttpd,\
 conspy,\
-uboot-envtools,\
+u-boot-tools,\
 openssh-server,\
 openssh-client,\
 mtd-utils,\

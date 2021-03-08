@@ -43,7 +43,7 @@
 set -e
 
 CROSS_BASE=${HOME}/devel/crosscompile
-DEBIAN_VERSION=squeeze
+DEBIAN_VERSION=stretch
 
 BASEDIR="$(readlink -m "$(dirname "$0")")"
 NCPUS=$(grep -i 'processor.*:' /proc/cpuinfo | wc -l)
