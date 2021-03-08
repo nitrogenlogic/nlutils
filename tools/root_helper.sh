@@ -13,7 +13,6 @@
 #   BASEDIR - base directory for the project (defaults to expansion of "$0/..")
 #   ROOT_SUFFIX - string added to the end of the output root directory name
 #   EXTRA_PACKAGES - list of extra packages to install into the root
-#   $1 - if --rebuild, rebuilds the root image from scratch
 
 if [ -z "$ARCH" -o -z "$RELEASE" ]; then
 	echo "Required variables missing"
@@ -21,7 +20,7 @@ if [ -z "$ARCH" -o -z "$RELEASE" ]; then
 fi
 
 # Debian mirror
-if [ $RELEASE = "squeeze" ]; then
+if [ $RELEASE = "squeeze" -o $RELEASE = "wheezy" ]; then
 	MIRROR=http://archive.debian.org/debian/
 else
 	MIRROR=https://mirrors.kernel.org/debian/
@@ -71,7 +70,6 @@ iputils-ping,\
 ca-certificates,\
 curl,\
 libevent-dev\
-${EXTRA_PACKAGES:+,$EXTRA_PACKAGES}\
 "
 
 # Fail fast
@@ -197,11 +195,12 @@ fi
 echo nameserver 8.8.8.8 | pipetoroot "/etc/resolv.conf"
 pipetoroot "/etc/apt/sources.list" <<EOF
 deb $MIRROR ${RELEASE} main contrib non-free
+deb $MIRROR ${RELEASE}-backports main contrib non-free
 EOF
 
 
 ### Update packages
 sudo_root /usr/bin/apt-get update -o Acquire::Check-Valid-Until=false
 sudo_root sh -c "DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get --no-install-recommends --force-yes -y dist-upgrade"
-sudo_root sh -c "DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get --no-install-recommends --force-yes -y install $(echo $PACKAGES | sed -e 's/,/ /g')"
+sudo_root sh -c "DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get --no-install-recommends --force-yes -y install $(echo $PACKAGES $EXTRA_PACKAGES | sed -e 's/,/ /g')"
 sudo_root /usr/bin/apt-get clean
