@@ -1,14 +1,12 @@
 # CMake toolchain file for Sheeva and related ARMv5 processors with no FPU
 # Copyright (C)2011 Mike Bourgeous.  Released under AGPLv3 in 2018.
 
-set(COMPILER_DIR $ENV{HOME}/CodeSourcery/Sourcery_G++_Lite/arm-none-linux-gnueabi)
-
 # See http://www.cmake.org/Wiki/CMake_Cross_Compiling
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR armv5tel)
-set(CMAKE_C_COMPILER arm-none-linux-gnueabi-gcc)
-set(CMAKE_CXX_COMPILER arm-none-linux-gnueabi-g++)
-set(CMAKE_FIND_ROOT_PATH ${COMPILER_DIR}/libc ${COMPILER_DIR} $ENV{DEBIAN_ROOT} $ENV{LIBS_ROOT} $ENV{ROOT})
+set(CMAKE_C_COMPILER arm-linux-gnueabi-gcc)
+set(CMAKE_CXX_COMPILER arm-linux-gnueabi-g++)
+set(CMAKE_FIND_ROOT_PATH $ENV{DEBIAN_ROOT} $ENV{LIBS_ROOT} $ENV{ROOT})
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
@@ -22,6 +20,6 @@ add_definitions(-DNL_EMBEDDED)
 set(NL_EMBEDDED true)
 
 # TODO: Create CMake find scripts instead of using hard-coded include and library paths
-set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-rpath ${COMPILER_DIR}/libc/lib -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/lib -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
-set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-rpath ${COMPILER_DIR}/libc/lib -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/lib -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS    "-Wl,-rpath ${COMPILER_DIR}/libc/lib -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib -Wl,-rpath $ENV{ROOT}/usr/lib -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
+set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
+set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS    "-Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
