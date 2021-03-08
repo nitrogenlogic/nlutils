@@ -156,7 +156,7 @@ case "${ROOT_SET}-${LIBS_ROOT_SET}-${DIR_SUFFIX_SET}" in
 esac
 
 
-BUILD=${BUILD:-Release}
+BUILD=${BUILD:-RelWithDebInfo}
 echo "Building a $BUILD build for $ARCH"
 
 ### Install libs for device image
