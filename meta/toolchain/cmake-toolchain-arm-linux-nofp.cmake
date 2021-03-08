@@ -17,7 +17,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-set(CMAKE_C_FLAGS "-march=armv5te -mtune=xscale -fsingle-precision-constant -nostdinc -nostdinc++ -I$ENV{DEBIAN_ROOT}/usr/include -I$ENV{DEBIAN_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{DEBIAN_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/include -I$ENV{LIBS_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{LIBS_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{LIBS_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/local/include -I$ENV{ROOT}/usr/include -I$ENV{ROOT}/usr/include/arm-linux-gnueabi -I$ENV{ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{ROOT}/usr/local/include" CACHE STRING "C compiler flags" FORCE)
+set(CMAKE_C_FLAGS "-march=armv5te -mtune=xscale -fsingle-precision-constant -nostdinc -I$ENV{DEBIAN_ROOT}/usr/include -I$ENV{DEBIAN_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include -I$ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include-fixed -I$ENV{DEBIAN_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/include -I$ENV{LIBS_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{LIBS_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{LIBS_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/local/include -I$ENV{ROOT}/usr/include -I$ENV{ROOT}/usr/include/arm-linux-gnueabi -I$ENV{ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{ROOT}/usr/local/include" CACHE STRING "C compiler flags" FORCE)
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 set(CMAKE_C_FLAGS_MINSIZEREL "-O2")
 
