@@ -35,8 +35,7 @@ ROOTPATH="${ROOT_BASE}/debian-${RELEASE}-root-${ARCH}${ROOT_SUFFIX:+-$ROOT_SUFFI
 
 # Base packages to install in the root
 PACKAGES="\
-debian-archive-keyring,\
-debian-ports-archive-keyring,\
+util-linux,\
 udev,\
 kmod,\
 netbase,\
@@ -67,10 +66,11 @@ wget,\
 schedtool,\
 isc-dhcp-client,\
 iputils-ping,\
-ca-certificates,\
 curl,\
 libevent-dev\
 "
+# ca-certificates,\
+
 
 # Fail fast
 set -e -u
@@ -172,10 +172,6 @@ if [ ! -d "$ROOTPATH/etc/apt" -o "${1:-}" = "--rebuild" -o "${2:-}" = "--rebuild
 	# Copy qemu
 	sudo mkdir -p "${ROOTPATH}/usr/bin"
 	sudo cp "$QEMU" "$ROOTPATH/$QEMU"
-
-	# Copy release keys
-	sudo mkdir -p "${ROOTPATH}/usr/share/keyrings/"
-	sudo cp /usr/share/keyrings/debian-archive* "${ROOTPATH}/usr/share/keyrings/"
 
 	# Run bootstrap
 	sudo debootstrap --foreign --arch="$ARCH" --variant=minbase --components="main,contrib,non-free" --include="$PACKAGES" "$RELEASE" "$ROOTPATH" "$MIRROR"
