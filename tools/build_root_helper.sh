@@ -41,7 +41,6 @@ clang,\
 cmake,\
 git,\
 checkinstall,\
-ruby1.9.1,\
 ruby,\
 libudev-dev,\
 libevent-dev,\

@@ -38,12 +38,11 @@ ROOTPATH="${ROOT_BASE}/debian-${RELEASE}-root-${ARCH}${ROOT_SUFFIX:+-$ROOT_SUFFI
 PACKAGES="\
 debian-archive-keyring,\
 debian-ports-archive-keyring,\
-module-init-tools,\
 udev,\
+kmod,\
 netbase,\
 net-tools,\
 ifupdown,\
-iproute,\
 whiptail,\
 gpgv,\
 vim-tiny,\
@@ -59,12 +58,10 @@ lsof,\
 usbutils,\
 netcat-openbsd,\
 libasound2,\
-libevent-core-1.4-2,\
-libevent-extra-1.4-2,\
 libavahi-compat-libdnssd1,\
-ruby1.9.1,\
+ruby,\
 libusb-1.0-0,\
-libpng12-0,\
+libpng16-16,\
 bzip2,\
 uuid-runtime,\
 wget,\
@@ -183,7 +180,7 @@ if [ ! -d "$ROOTPATH/etc/apt" -o "${1:-}" = "--rebuild" -o "${2:-}" = "--rebuild
 	sudo cp /usr/share/keyrings/debian-archive* "${ROOTPATH}/usr/share/keyrings/"
 
 	# Run bootstrap
-	sudo debootstrap --foreign --arch="$ARCH" --variant=minbase --include="$PACKAGES" "$RELEASE" "$ROOTPATH" "$MIRROR"
+	sudo debootstrap --foreign --arch="$ARCH" --variant=minbase --components="main,contrib,non-free" --include="$PACKAGES" "$RELEASE" "$ROOTPATH" "$MIRROR"
 	sudo_root /debootstrap/debootstrap --second-stage
 
 	sudo_root /usr/bin/apt-get clean
