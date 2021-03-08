@@ -24,7 +24,9 @@ set(CMAKE_C_FLAGS_MINSIZEREL "-O2")
 add_definitions(-DNL_EMBEDDED)
 set(NL_EMBEDDED true)
 
-# TODO: Create CMake find scripts instead of using hard-coded include and library paths
-set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-nostdlib -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
-set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-nostdlib -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS    "-Wl,-nostdlib -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib" CACHE STRING "Linker flags" FORCE)
+# TODO: Create CMake find scripts instead of using hard-coded include and
+# library paths, or just use a Docker image of the target Debian version
+set(NL_LINKER_FLAGS "-Wl,-nostdlib -nodefaultlibs -nostartfiles $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi/crt1.o $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi/crti.o -lgcc_s -lc $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi/libc.a -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6 -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib")
+set(CMAKE_SHARED_LINKER_FLAGS ${NL_LINKER_FLAGS} CACHE STRING "Linker flags" FORCE)
+set(CMAKE_MODULE_LINKER_FLAGS ${NL_LINKER_FLAGS} CACHE STRING "Linker flags" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS ${NL_LINKER_FLAGS} CACHE STRING "Linker flags" FORCE)
