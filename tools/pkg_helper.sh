@@ -66,6 +66,7 @@ create_package()
 	rm -f description-pak
 	printf "$DESCRIPTION\n\n" | show_run sudo checkinstall \
 		-D --install=no --reset-uids=yes --nodoc --backup=no \
+		--strip=no --stripso=no \
 		--maintainer="$MAINTAINER" --pkgsource="/dev/null" \
 		--pkggroup="$PKGGROUP" --pkglicense="Proprietary" \
 		--pkgversion="$ver" --pkgrelease="$rel" --pkgname="$PKGNAME" \
