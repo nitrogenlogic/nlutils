@@ -156,7 +156,7 @@ remount_with_dev()
 # preserving the TESTS and VALGRIND environment variables.
 sudo_root()
 {
-	show_run sudo HOME=/root TESTS=${TESTS:-} VALGRIND=${VALGRIND:-} PKGDIR=${PKGDIR:-/tmp} chroot "${ROOTPATH}" setarch "$UNAME" -- SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt "$@"
+	show_run sudo HOME=/root TESTS=${TESTS:-} VALGRIND=${VALGRIND:-} PKGDIR=${PKGDIR:-/tmp} chroot "${ROOTPATH}" setarch "$UNAME" -- "$@"
 }
 
 
@@ -210,6 +210,8 @@ if [ "${RELEASE}" = "buster" ]; then
 	if ! grep -q SSL_CERT_FILE "${ROOTPATH}/etc/environment"; then
 		echo 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt' | appendtoroot "/etc/environment"
 	fi
+
+	echo 'export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt' | pipetoroot "/etc/profile.d/99-nl-ssl-fix.sh"
 fi
 
 

@@ -76,7 +76,7 @@ EOF
 sudo git -C "${ROOTPATH}/${CLONEPATH}" clone --single-branch "${BASEDIR}" "$PROJECT"
 
 # Install the project into /usr/local for use by other projects (TODO: just use the package)
-sudo_root sh -c "cd ${CLONEPATH}/${PROJECT} && sh -c \"$LOCAL_BUILD\""
+sudo_root sh -c ". /etc/profile && cd ${CLONEPATH}/${PROJECT} && sh -c \"$LOCAL_BUILD\""
 
 # Build the package
 if [ "$PACKAGE" '!=' "0" ]; then
