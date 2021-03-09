@@ -18,7 +18,7 @@ BASEDIR="$(readlink -m "$(dirname "$0")/..")"
 ARCH=${ARCH:-armel}
 
 # Debian version name
-RELEASE=${RELEASE:-stretch}
+RELEASE=${RELEASE:-buster}
 
 # Output file for root filesystem image
 FSIMAGE="$HOME/devel/crosscompile/ubifs-${RELEASE}-${ARCH}.img"
@@ -121,7 +121,7 @@ esac
 
 echo "Building and installing nlutils"
 rm -rf "${ROOTPATH}-nlutils"
-ROOT="${ROOTPATH}-nlutils" "${BASEDIR}/crosscompile.sh" $nlutils_arch
+ROOT="${ROOTPATH}-nlutils" DEBIAN_VERSION="${RELEASE}" "${BASEDIR}/crosscompile.sh" $nlutils_arch
 sudo cp -Rdfv "${ROOTPATH}-nlutils"/* "$ROOTPATH"
 sudo chown root:www-data "$ROOTPATH"/opt/nitrogenlogic/util/*
 sudo chmod 4750 "$ROOTPATH"/opt/nitrogenlogic/util/*

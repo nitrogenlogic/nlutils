@@ -101,12 +101,24 @@ pipeto()
 	sudo sh -c "cat > \"$1\""
 }
 
+# Appends to the file given in $1 from stdin using sudo.
+appendto()
+{
+	printf "\n\033[0;33mAppending to $1\033[0m\n"
+	sudo sh -c "cat >> \"$1\""
+}
+
 # Overwrites the file in $ROOTPATH/$1 from stdin using sudo.
 pipetoroot()
 {
 	pipeto "${ROOTPATH}/$1"
 }
 
+# Appends to the file in $ROOTPATH/$1 from stdin using sudo
+appendtoroot()
+{
+	appendto "${ROOTPATH}/$1"
+}
 
 # Displays the command to be run on the terminal, then runs it.
 show_run()
@@ -144,7 +156,7 @@ remount_with_dev()
 # preserving the TESTS and VALGRIND environment variables.
 sudo_root()
 {
-	show_run sudo HOME=/root TESTS=${TESTS:-} VALGRIND=${VALGRIND:-} PKGDIR=${PKGDIR:-/tmp} chroot "${ROOTPATH}" setarch "$UNAME" -- "$@"
+	show_run sudo HOME=/root TESTS=${TESTS:-} VALGRIND=${VALGRIND:-} PKGDIR=${PKGDIR:-/tmp} chroot "${ROOTPATH}" setarch "$UNAME" -- SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt "$@"
 }
 
 
@@ -193,6 +205,12 @@ pipetoroot "/etc/apt/sources.list" <<EOF
 deb $MIRROR ${RELEASE} main contrib non-free
 deb $MIRROR ${RELEASE}-backports main contrib non-free
 EOF
+
+if [ "${RELEASE}" = "buster" ]; then
+	if ! grep -q SSL_CERT_FILE "${ROOTPATH}/etc/environment"; then
+		echo 'SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt' | appendtoroot "/etc/environment"
+	fi
+fi
 
 
 ### Update packages

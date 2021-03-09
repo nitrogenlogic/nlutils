@@ -17,7 +17,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-set(CMAKE_C_FLAGS "-g -march=armv5te -mtune=xscale -fsingle-precision-constant -nostdinc -I$ENV{DEBIAN_ROOT}/usr/include -I$ENV{DEBIAN_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include -I$ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include-fixed -I$ENV{DEBIAN_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/include -I$ENV{LIBS_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{LIBS_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{LIBS_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/local/include -I$ENV{ROOT}/usr/include -I$ENV{ROOT}/usr/include/arm-linux-gnueabi -I$ENV{ROOT}/usr/lib/gcc/arm-linux-gnueabi/6/include/ -I$ENV{ROOT}/usr/local/include" CACHE STRING "C compiler flags" FORCE)
+set(CMAKE_C_FLAGS "-g -march=armv5te -mtune=xscale -fsingle-precision-constant -nostdinc -I$ENV{DEBIAN_ROOT}/usr/include -I$ENV{DEBIAN_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/8/include -I$ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/8/include-fixed -I$ENV{DEBIAN_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/include -I$ENV{LIBS_ROOT}/usr/include/arm-linux-gnueabi -I$ENV{LIBS_ROOT}/usr/lib/gcc/arm-linux-gnueabi/8/include/ -I$ENV{LIBS_ROOT}/usr/include/libusb-1.0 -I$ENV{LIBS_ROOT}/usr/local/include -I$ENV{ROOT}/usr/include -I$ENV{ROOT}/usr/include/arm-linux-gnueabi -I$ENV{ROOT}/usr/lib/gcc/arm-linux-gnueabi/8/include/ -I$ENV{ROOT}/usr/local/include" CACHE STRING "C compiler flags" FORCE)
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 set(CMAKE_C_FLAGS_MINSIZEREL "-O2")
 
@@ -26,7 +26,7 @@ set(NL_EMBEDDED true)
 
 # TODO: Create CMake find scripts instead of using hard-coded include and
 # library paths, or just use a Docker image of the target Debian version
-set(NL_LINKER_FLAGS "-Wl,-nostdlib -nodefaultlibs -nostartfiles $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi/crt1.o $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi/crti.o -lgcc_s -lc $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi/libc.a -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/6 -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib")
+set(NL_LINKER_FLAGS "-Wl,-nostdlib -Wl,-rpath $ENV{LIBS_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/arm-linux-gnueabi -Wl,-rpath $ENV{DEBIAN_ROOT}/usr/lib/gcc/arm-linux-gnueabi/8 -Wl,-rpath $ENV{ROOT}/usr/lib/arm-linux-gnueabi -L$ENV{LIBS_ROOT}/usr/local/lib -L$ENV{DEBIAN_ROOT}/usr/local/lib -L$ENV{ROOT}/usr/local/lib")
 set(CMAKE_SHARED_LINKER_FLAGS ${NL_LINKER_FLAGS} CACHE STRING "Linker flags" FORCE)
 set(CMAKE_MODULE_LINKER_FLAGS ${NL_LINKER_FLAGS} CACHE STRING "Linker flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS ${NL_LINKER_FLAGS} CACHE STRING "Linker flags" FORCE)
