@@ -80,7 +80,7 @@ sudo_root sh -c ". /etc/profile && cd ${CLONEPATH}/${PROJECT} && sh -c \"$LOCAL_
 
 # Build the package
 if [ "${PACKAGE:-1}" '!=' "0" ]; then
-	PKGDIR="${CLONEPATH}" sudo_root "${CLONEPATH}/${PROJECT}/meta/make_pkg.sh"
+	PKGDIR="${CLONEPATH}" sudo_root sh -c ". /etc/profile; ${CLONEPATH}/${PROJECT}/meta/make_pkg.sh"
 	PKGDIR="$ORIG_PKGDIR"
 
 	# Copy release version update back into project directory
