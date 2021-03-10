@@ -288,7 +288,8 @@ static struct url_req_test req_tests[] = {
 	{
 		.desc = "Connection timeout",
 		.params = {
-			.url = BASE_URL,
+			// FIXME: This can't be guaranteed not to connect
+			.url = "http://169.254.253.218:45454",
 			.connect_timeout = 1, // 1ms
 		},
 		.expect_timeout = 1,
