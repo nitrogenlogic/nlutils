@@ -90,9 +90,10 @@ if [ "${PACKAGE:-1}" '!=' "0" ]; then
 	show_run git remote remove "$GITREMOTE"
 
 	# Move package files to their final destination and clean up
-	printf "\n\033[35mCopying package files to $PKGDIR/\033[0m\n"
-	mkdir -p "$PKGDIR/"
-	cp -v -- "${ROOTPATH}${CLONEPATH}"/*.{deb,tar.*,gem} "$PKGDIR/"
+	PACKAGE_COUNT=$(find "${ROOTPATH}${CLONEPATH}" -name '*.deb' -o -name '*.tar.*' -o -name '*.gem' | wc -l)
+	printf "\n\033[35mCopying ${PACKAGE_COUNT} package file(s) in ${ROOTPATH}${CLONEPATH} to $PKGDIR/\033[0m\n"
+	show_run mkdir -p "$PKGDIR/"
+	show_run find "${ROOTPATH}${CLONEPATH}" '(' -name '*.deb' -o -name '*.tar.*' -o -name '*.gem' ')' -exec cp -v {} "$PKGDIR/" ';'
 fi
 
 sudo_root rm -rf "$CLONEPATH"
