@@ -99,7 +99,7 @@ trap '_Zret=$?; [ $_Zret -ne 0 ] && printf "\033[1;31mFailed pkg with status $_Z
 MAINTAINER="${MAINTAINER:-"support@nitrogenlogic.com"}"
 PKGGROUP="${PKGGROUP:-"Nitrogen Logic"}"
 PKGDIR="${PKGDIR:-/tmp}"
-PKGEXCLUDE="${PKGEXCLUDE:-"/home,/opt,/var/www,/etc/sudoers.d"}"
+PKGEXCLUDE="${PKGEXCLUDE:-"/home,/var/www,/etc/sudoers.d"}"
 PKGDEPS="${PKGDEPS:-}"
 
 # System info vars
