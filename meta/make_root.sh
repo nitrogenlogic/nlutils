@@ -18,7 +18,7 @@ BASEDIR="$(readlink -m "$(dirname "$0")/..")"
 ARCH=${ARCH:-armel}
 
 # Debian version name
-RELEASE=${RELEASE:-squeeze}
+RELEASE=${RELEASE:-buster}
 
 # Output file for root filesystem image
 FSIMAGE="$HOME/devel/crosscompile/ubifs-${RELEASE}-${ARCH}.img"
@@ -36,9 +36,9 @@ daemontools,\
 ntp,\
 ntpdate,\
 vsftpd,\
-thttpd,\
+lighttpd,\
 conspy,\
-uboot-envtools,\
+u-boot-tools,\
 openssh-server,\
 openssh-client,\
 mtd-utils,\
@@ -46,10 +46,14 @@ logrotate,\
 cron\
 "
 
+printf "\033[1;33m\n\nBuilding base root\033[0m\n\n"
 . "${BASEDIR}/tools/root_helper.sh"
 
+printf "\033[1;33m\n\nBuilding build root\033[0m\n\n"
+PACKAGE=0 ROOT_SUFFIX=${ROOT_SUFFIX:+$ROOT_SUFFIX-}build . "${BASEDIR}/tools/build_root_helper.sh"
+
 ### Set hostname and other settings
-echo "Configuring target system settings"
+printf "\033[1;33m\n\nConfiguring target system settings\033[0m\n\n"
 echo logic-controller | pipetoroot "/etc/hostname"
 echo LANG=C | pipetoroot "/etc/default/locale"
 echo | pipetoroot "/etc/udev/rules.d/75-persistent-net-generator.rules"
@@ -117,7 +121,7 @@ esac
 
 echo "Building and installing nlutils"
 rm -rf "${ROOTPATH}-nlutils"
-ROOT="${ROOTPATH}-nlutils" "${BASEDIR}/crosscompile.sh" $nlutils_arch
+ROOT="${ROOTPATH}-nlutils" DEBIAN_VERSION="${RELEASE}" "${BASEDIR}/crosscompile.sh" $nlutils_arch
 sudo cp -Rdfv "${ROOTPATH}-nlutils"/* "$ROOTPATH"
 sudo chown root:www-data "$ROOTPATH"/opt/nitrogenlogic/util/*
 sudo chmod 4750 "$ROOTPATH"/opt/nitrogenlogic/util/*
@@ -130,10 +134,10 @@ sudo chroot ${ROOTPATH} /sbin/ldconfig
 sudo find "${ROOTPATH}/var/log" -type f -print -exec sh -c "dd if=/dev/null of={} &> /dev/null" \;
 sudo rm "${ROOTPATH}/${QEMU}"
 
-
-### Build UBIFS and UBI images
-echo "Building UBI image"
-cat > "$UBICFG" <<EOF_UBI
+if [ "$PACKAGE" != '0' ]; then
+	### Build UBIFS and UBI images
+	echo "Building UBI image"
+	cat > "$UBICFG" <<EOF_UBI
 [rootfs]
 mode=ubi
 image=${FSIMAGE}
@@ -144,15 +148,16 @@ vol_name=rootfs
 vol_flags=autoresize
 EOF_UBI
 
-# For some unfathomable reason, mkfs.ubifs removed the option to force the root
-# inode's permissions to root:root 755.
-sudo chown root:root "$ROOTPATH"
-sudo chmod 755 "$ROOTPATH"
+	# For some unfathomable reason, mkfs.ubifs removed the option to force the root
+	# inode's permissions to root:root 755.
+	sudo chown root:root "$ROOTPATH"
+	sudo chmod 755 "$ROOTPATH"
 
-DEBIAN_FRONTEND=noninteractive sudo apt-get install --no-install-recommends -y mtd-utils
-sudo mkfs.ubifs -v -r "$ROOTPATH" -m 2048 -e 129024 -c 4096 -o "$FSIMAGE" -x "favor_lzo"
-sudo ubinize -v -o "$UBI" -m 2048 -p 128KiB -s 512 "$UBICFG"
-sudo chown `id -u`:`id -g` "$UBI" "$FSIMAGE"
-rm "$UBICFG"
+	DEBIAN_FRONTEND=noninteractive sudo apt-get install --no-install-recommends -y mtd-utils
+	sudo mkfs.ubifs -v -r "$ROOTPATH" -m 2048 -e 129024 -c 4096 -o "$FSIMAGE" -x "favor_lzo"
+	sudo ubinize -v -o "$UBI" -m 2048 -p 128KiB -s 512 "$UBICFG"
+	sudo chown `id -u`:`id -g` "$UBI" "$FSIMAGE"
+	rm "$UBICFG"
 
-echo "UBI image built in '$UBI'"
+	echo "UBI image built in '$UBI'"
+fi

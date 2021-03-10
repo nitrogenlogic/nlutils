@@ -4,3 +4,6 @@ Handle EINTR in url_req code to deal with error seen in Palace:
 
 Move bitfield from logic_system
 Make parmaeters to hash.c functions const where possible
+
+Fix test execution in qemu environment (run meta/make_root.sh instead of TESTS=0 meta/make_root.sh).
+Fix checkinstall in qemu ARM environment; it segfaults

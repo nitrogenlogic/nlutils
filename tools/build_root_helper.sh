@@ -41,7 +41,6 @@ clang,\
 cmake,\
 git,\
 checkinstall,\
-ruby1.9.1,\
 ruby,\
 libudev-dev,\
 libevent-dev,\
@@ -77,20 +76,24 @@ EOF
 sudo git -C "${ROOTPATH}/${CLONEPATH}" clone --single-branch "${BASEDIR}" "$PROJECT"
 
 # Install the project into /usr/local for use by other projects (TODO: just use the package)
-sudo_root sh -c "cd ${CLONEPATH}/${PROJECT} && sh -c \"$LOCAL_BUILD\""
+sudo_root sh -c ". /etc/profile && cd ${CLONEPATH}/${PROJECT} && sh -c \"$LOCAL_BUILD\""
 
 # Build the package
-PKGDIR="${CLONEPATH}" sudo_root "${CLONEPATH}/${PROJECT}/meta/make_pkg.sh"
-PKGDIR="$ORIG_PKGDIR"
+if [ "${PACKAGE:-1}" '!=' "0" ]; then
+	PKGDIR="${CLONEPATH}" sudo_root sh -c ". /etc/profile; ${CLONEPATH}/${PROJECT}/meta/make_pkg.sh"
+	PKGDIR="$ORIG_PKGDIR"
 
-# Copy release version update back into project directory
-GITREMOTE="build-$$-$(date --iso-8601=ns | tr -cd 0-9-)"
-show_run git remote add -t "$BRANCH" "$GITREMOTE" "${ROOTPATH}/${CLONEPATH}/${PROJECT}"
-show_run git pull "$GITREMOTE" "$BRANCH"
-show_run git remote remove "$GITREMOTE"
+	# Copy release version update back into project directory
+	GITREMOTE="build-$$-$(date --iso-8601=ns | tr -cd 0-9-)"
+	show_run git remote add -t "$BRANCH" "$GITREMOTE" "${ROOTPATH}/${CLONEPATH}/${PROJECT}"
+	show_run git pull "$GITREMOTE" "$BRANCH"
+	show_run git remote remove "$GITREMOTE"
 
-# Move package files to their final destination and clean up
-printf "\n\033[35mCopying package files to $PKGDIR/\033[0m\n"
-mkdir -p "$PKGDIR/"
-cp -v -- "${ROOTPATH}${CLONEPATH}"/*.deb "$PKGDIR/"
+	# Move package files to their final destination and clean up
+	PACKAGE_COUNT=$(find "${ROOTPATH}${CLONEPATH}" -name '*.deb' -o -name '*.tar.*' -o -name '*.gem' | wc -l)
+	printf "\n\033[35mCopying ${PACKAGE_COUNT} package file(s) in ${ROOTPATH}${CLONEPATH} to $PKGDIR/\033[0m\n"
+	show_run mkdir -p "$PKGDIR/"
+	show_run find "${ROOTPATH}${CLONEPATH}" '(' -name '*.deb' -o -name '*.tar.*' -o -name '*.gem' ')' -exec cp -v {} "$PKGDIR/" ';'
+fi
+
 sudo_root rm -rf "$CLONEPATH"

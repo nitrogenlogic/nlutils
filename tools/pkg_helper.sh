@@ -66,6 +66,7 @@ create_package()
 	rm -f description-pak
 	printf "$DESCRIPTION\n\n" | show_run sudo checkinstall \
 		-D --install=no --reset-uids=yes --nodoc --backup=no \
+		--strip=no --stripso=no \
 		--maintainer="$MAINTAINER" --pkgsource="/dev/null" \
 		--pkggroup="$PKGGROUP" --pkglicense="Proprietary" \
 		--pkgversion="$ver" --pkgrelease="$rel" --pkgname="$PKGNAME" \
@@ -98,7 +99,7 @@ trap '_Zret=$?; [ $_Zret -ne 0 ] && printf "\033[1;31mFailed pkg with status $_Z
 MAINTAINER="${MAINTAINER:-"support@nitrogenlogic.com"}"
 PKGGROUP="${PKGGROUP:-"Nitrogen Logic"}"
 PKGDIR="${PKGDIR:-/tmp}"
-PKGEXCLUDE="${PKGEXCLUDE:-"/home,/opt,/var/www,/etc/sudoers.d"}"
+PKGEXCLUDE="${PKGEXCLUDE:-"/home,/var/www,/etc/sudoers.d"}"
 PKGDEPS="${PKGDEPS:-}"
 
 # System info vars
@@ -108,7 +109,7 @@ NCPUS="$(grep -i 'processor.*:' /proc/cpuinfo | wc -l)"
 # Build vars
 BASEDIR="${BASEDIR:-"$(readlink -m "$(dirname "$0")/..")"}"
 BUILDDIR="${BUILDDIR:-"$BASEDIR/build-pkg-$VERSION"}"
-INSTALL_CMD="${INSTALL_CMD:-"make -C $BUILDDIR -j$NCPUS install"}"
+INSTALL_CMD="${INSTALL_CMD:-"make -C $BUILDDIR install"}"
 
 
 printf "\n\033[36mBuilding \033[1m$PKGNAME\033[0;36m for \033[1m$NAME\033[0;36m in \033[1m$PKGDIR\033[0m\n"
