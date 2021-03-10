@@ -79,7 +79,7 @@ sudo git -C "${ROOTPATH}/${CLONEPATH}" clone --single-branch "${BASEDIR}" "$PROJ
 sudo_root sh -c ". /etc/profile && cd ${CLONEPATH}/${PROJECT} && sh -c \"$LOCAL_BUILD\""
 
 # Build the package
-if [ "$PACKAGE" '!=' "0" ]; then
+if [ "${PACKAGE:-1}" '!=' "0" ]; then
 	PKGDIR="${CLONEPATH}" sudo_root "${CLONEPATH}/${PROJECT}/meta/make_pkg.sh"
 	PKGDIR="$ORIG_PKGDIR"
 
