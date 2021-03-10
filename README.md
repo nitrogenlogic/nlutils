@@ -334,7 +334,7 @@ libnlutils_0.12.0-4_armel.deb
 ```
 
 If something goes wrong, you can find the source code in /tmp in the specific
-chroot (e.g. `~/devel/crosscompile/debian-squeeze-root-i386-build/tmp/`).
+chroot (e.g. `~/devel/crosscompile/debian-buster-root-armel-build/tmp/`).
 
 
 [0]: https://www.gnu.org/licenses/agpl-3.0.en.html

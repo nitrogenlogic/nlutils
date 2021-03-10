@@ -3,10 +3,10 @@
 # Copyright (C)2015 Mike Bourgeous.  Released under AGPLv3 in 2018.
 
 # Debian architecture name
-ARCH=${ARCH:-i386}
+ARCH=${ARCH:-armel}
 
 # Debian release name
-RELEASE=squeeze
+RELEASE=buster
 
 # Project directory
 BASEDIR="$(readlink -m "$(dirname "$0")/..")"
