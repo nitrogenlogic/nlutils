@@ -102,9 +102,29 @@ void nl_print_context(FILE *out, ucontext_t *ctx)
 # endif /* __x86_64__ */
 	nl_print_address(out, "Instruction pointer", (void *)ip);
 	nl_print_address(out, "Stack pointer", (void *)sp);
-#else /* __arm__ */
-	nl_fptmf(out, "Architecture not supported\n");
-#endif /* __arm__ */
+#else /* __arm__ / __x86_64__ / __i386__ */
+	nl_fptmf(out, "Architecture not supported; stack or instruction pointer not available\n");
+#endif /* __arm__ / __x86_64__ / __i386__ */
+}
+
+/*
+ * Prints information about the current thread's execution context.  This calls
+ * getcontext() and nl_print_context() for you to avoid compiler warnings about
+ * potential longjmp/vfork issues even though we won't be using the context for
+ * jumping.
+ *
+ * Parameters:
+ *   out - Where to write the context info
+ */
+void nl_print_current_context(FILE *out)
+{
+	ucontext_t ctx;
+
+	if (getcontext(&ctx)) {
+		ERRNO_OUT("Error getting context to print");
+	} else {
+		nl_print_context(out, &ctx);
+	}
 }
 
 /*

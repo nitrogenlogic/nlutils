@@ -1,4 +1,4 @@
-set(NLUTILS_VERSION 0.12.6)
+set(NLUTILS_VERSION 0.12.7)
 set(NLUTILS_SO_VERSION 12)
 
 cmake_minimum_required(VERSION 2.6)

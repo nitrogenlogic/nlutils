@@ -74,6 +74,7 @@ struct output_test {
 	char **expect; // NULL-terminated list of strings to expect in the file
 };
 
+// TODO: This might be useful to abstract for other tests
 int run_output_test(struct output_test *test)
 {
 	FILE *f = tmpfile();
@@ -165,7 +166,7 @@ struct output_test output_tests[] = {
 	{
 		.desc = "nl_print_backtrace()",
 		.func = test_nl_print_backtrace,
-		.expect = (char *[]){ "level_one", "level_two", "level_three", "level_four", NULL },
+		.expect = (char *[]){ "pointer", "debug_test_main", "level_one", "level_two", "level_three", "level_four", NULL },
 	},
 	{
 		.desc = "nl_print_signal()",
@@ -183,6 +184,8 @@ int main(void)
 {
 	int ret = 0;
 
+	nl_set_threadname("debug_test_main");
+
 	if(test_nl_strsigcode()) {
 		ERROR_OUT("nl_strsigcode() tests failed.\n");
 		ret = -1;
@@ -198,6 +201,10 @@ int main(void)
 			INFO_OUT("%s tests succeeded.\n", t->desc);
 		}
 	}
+
+	INFO_OUT("Printing thread trace for manual inspection:\e[36m\n");
+	NL_PRINT_TRACE(stdout);
+	puts("\e[0m\n");
 
 	return ret;
 }
