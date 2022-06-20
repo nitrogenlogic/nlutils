@@ -1,6 +1,9 @@
 #!/bin/bash
 # Nitrogen Logic utility library tests
-# Copyright (C)2015 Mike Bourgeous.  Released under AGPLv3 in 2018.
+# Copyright (C)2015-2022 Mike Bourgeous.  Released under AGPLv3 in 2018.
+#
+# Set VALGRIND=0 to disable running tests under Valgrind.
+# Set TESTS="test_name another_test" to select specific test executables to run.
 
 # TODO: Extract a set of helper scripts that can be used for tests in other projects
 
@@ -145,6 +148,14 @@ runtest()
 	shift
 	cmd="$1"
 	shift
+
+	if [ -n "$TESTS" ]; then
+		base=$(basename "$cmd")
+		if ! ( echo "$TESTS" | grep -qE "\b$base\b" ); then
+			printf "\e[36mTESTS is set and \e[1m${base}\e[22m is not included.  \e[33mSkipping.\e[0m\n"
+			return 0
+		fi
+	fi
 
 	if [ -x /usr/bin/valgrind ]; then
 		case "$VALGRIND" in
