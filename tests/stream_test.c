@@ -58,6 +58,8 @@ int test_open_timeout(char *exe)
 
 int test_read_file(char *input_file)
 {
+	int ret = 0;
+
 	INFO_OUT("Testing nl_read_file(%s).\n", input_file);
 
 	struct nl_raw_data *data = nl_read_file(input_file);
@@ -68,20 +70,22 @@ int test_read_file(char *input_file)
 
 	if (data->size == 0) {
 		ERROR_OUT("Reading %s returned a size of zero.\n", input_file);
-		return -1;
+		ret = -1;
 	}
 
 	if (data->data == NULL) {
 		ERROR_OUT("Reading %s returned a NULL internal data pointer.\n", input_file);
-		return -1;
+		ret = -1;
 	}
 
-	if (data->data[data->size] != 0) {
+	if (data->data != NULL && data->data[data->size] != 0) {
 		ERROR_OUT("Returned data for %s was not terminated by a NUL byte.\n", input_file);
-		return -1;
+		ret = -1;
 	}
 
-	return 0;
+	nl_destroy_data(data);
+
+	return ret;
 }
 
 int main(int argc, char *argv[])
