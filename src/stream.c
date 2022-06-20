@@ -133,6 +133,31 @@ error:
 }
 
 /*
+ * Reads the entire contents of a given filename into a struct nl_raw_data.
+ * Call nl_destroy_data() (not free!) to free the struct.  Returns NULL if
+ * there was an error.
+ */
+struct nl_raw_data *nl_read_file(const char *filename)
+{
+	int fd = open(filename, O_RDONLY | O_CLOEXEC);
+	if (fd < 0) {
+		ERRNO_OUT("Error opening %s for reading", filename);
+		return NULL;
+	}
+
+	struct nl_raw_data *data = nl_read_stream(fd);
+	if (data == NULL) {
+		ERROR_OUT("Error reading contents of %s\n", filename);
+		close(fd);
+		return NULL;
+	}
+
+	close(fd);
+
+	return data;
+}
+
+/*
  * Sets the FD_CLOEXEC flag on the given file descriptor.  Returns 0 on
  * success, -1 on error
  */

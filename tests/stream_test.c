@@ -56,17 +56,57 @@ int test_open_timeout(char *exe)
 	return 0;
 }
 
+int test_read_file(char *input_file)
+{
+	INFO_OUT("Testing nl_read_file(%s).\n", input_file);
+
+	struct nl_raw_data *data = nl_read_file(input_file);
+	if (data == NULL) {
+		ERROR_OUT("Failed to read %s.\n", input_file);
+		return -1;
+	}
+
+	if (data->size == 0) {
+		ERROR_OUT("Reading %s returned a size of zero.\n", input_file);
+		return -1;
+	}
+
+	if (data->data == NULL) {
+		ERROR_OUT("Reading %s returned a NULL internal data pointer.\n", input_file);
+		return -1;
+	}
+
+	if (data->data[data->size] != 0) {
+		ERROR_OUT("Returned data for %s was not terminated by a NUL byte.\n", input_file);
+		return -1;
+	}
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
+	int fail = 0;
+
 	if(argc != 1) {
-		return 1;
+		return -1;
 	}
 
 	if(test_open_timeout(argv[0])) {
-		return -1;
+		fail += 1;
+	}
+
+	if (test_read_file(argv[0])) {
+		fail += 1;
 	}
 
 	// TODO: Test other stream.c functions
 
-	return 0;
+	if (fail) {
+		ERROR_OUT("%d stream tests failed.\n", fail);
+	} else {
+		INFO_OUT("All stream tests passed.\n");
+	}
+
+	return fail;
 }

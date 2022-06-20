@@ -27,6 +27,13 @@ int nl_write_stream(int fd, const struct nl_raw_data * const data);
 struct nl_raw_data *nl_read_stream(int fd);
 
 /*
+ * Reads the entire contents of a given filename into a struct nl_raw_data.
+ * Call nl_destroy_data() (not free!) to free the struct.  Returns NULL if
+ * there was an error.
+ */
+struct nl_raw_data *nl_read_file(const char *filename);
+
+/*
  * Sets the FD_CLOEXEC flag on the given file descriptor.  Returns 0 on
  * success, -1 on error
  */

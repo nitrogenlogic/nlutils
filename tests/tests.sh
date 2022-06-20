@@ -200,6 +200,9 @@ runtest true 'String function tests' \
 runtest true 'String escape tests' \
 	./escape_test
 
+headline "Testing file/stream functions"
+runtest true 'Stream function tests' \
+	./stream_test
 
 # Test FIFO (struct nl_fifo) functions
 headline "Testing nl_fifo functions"
