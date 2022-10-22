@@ -1121,10 +1121,12 @@ static int start_curl(struct nl_url_req *req)
 		ERRNO_OUT("Error deleting request body FIFO %s for %s", opt_fifo, req->result.url);
 	}
 	free(opt_fifo);
+	opt_fifo = NULL;
 	if(rmdir(temp_dir)) {
 		ERRNO_OUT("Error deleting temporary directory %s for %s", temp_dir, req->result.url);
 	}
 	free(temp_dir);
+	temp_dir = NULL;
 
 	// Connect curl output to libevent
 	req->outbuf = create_bufferevent(req, req->readfd);
