@@ -39,11 +39,18 @@ struct nl_fifo *nl_fifo_create();
 void nl_fifo_destroy(struct nl_fifo *l);
 
 /*
- * Adds a new element to the fifo.  The return value is the number of elements
- * in the fifo after the new element is added, or negative on error.  NULL data
- * is considered to be an error.
+ * Adds a new element to the end of the fifo.  The return value is the number
+ * of elements in the fifo after the new element is added, or negative on
+ * error.  NULL data is considered to be an error.
  */
 int nl_fifo_put(struct nl_fifo *l, void *data);
+
+/*
+ * Prepends an element to the beginning of the fifo.  The return value is the
+ * number of elements in the fifo after the new element is added, or negative
+ * on error.  NULL data is considered to be an error.
+ */
+int nl_fifo_prepend(struct nl_fifo *l, void *data);
 
 /*
  * Removes the least-recently-added element from the fifo.  Returns NULL if the

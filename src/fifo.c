@@ -1,6 +1,6 @@
 /*
  * fifo.c - A generic FIFO implementation using a linked list.
- * Copyright (C)2009, 2014-2019 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2009, 2014-2022 Mike Bourgeous.  Released under AGPLv3 in 2018.
  *
  * Copied from the logic system project.
  *
@@ -80,26 +80,42 @@ void nl_fifo_destroy(struct nl_fifo *l)
 }
 
 /*
- * Adds a new element to the fifo.  The return value is the number of elements
- * in the fifo after the new element is added, or negative on error.  NULL data
- * is considered to be an error.
+ * Checks for NULL parameters and allocates a new element.  Returns NULL if
+ * either NULL checks or allocation failed.  For use by nl_fifo_put() and
+ * nl_fifo_prepend().
  */
-int nl_fifo_put(struct nl_fifo *l, void *data)
+static struct nl_fifo_element *nl_fifo_allocate_new_element(struct nl_fifo *l, void *data)
 {
 	struct nl_fifo_element *e;
 
 	if(CHECK_NULL(l) || CHECK_NULL(data)) {
-		return -1;
+		return NULL;
 	}
 
 	e = malloc(sizeof(struct nl_fifo_element));
 	if(e == NULL) {
 		ERRNO_OUT("Error allocating new fifo element");
-		return -1;
+		return NULL;
 	}
 	e->data = data;
 	e->next = NULL;
 	e->l = l;
+
+	return e;
+}
+
+
+/*
+ * Adds a new element to the end of the fifo.  The return value is the number
+ * of elements in the fifo after the new element is added, or negative on
+ * error.  NULL data is considered to be an error.
+ */
+int nl_fifo_put(struct nl_fifo *l, void *data)
+{
+	struct nl_fifo_element *e = nl_fifo_allocate_new_element(l, data);
+	if (e == NULL) {
+		return -1;
+	}
 
 	// If it ever comes down to it, there's probably a slightly faster way
 	// to organize the list, to avoid these conditionals.
@@ -109,6 +125,33 @@ int nl_fifo_put(struct nl_fifo *l, void *data)
 	} else {
 		l->last->next = e;
 		l->last = e;
+	}
+
+	l->count++;
+
+	return l->count;
+}
+
+/*
+ * Prepends an element to the beginning of the fifo.  The return value is the
+ * number of elements in the fifo after the new element is added, or negative
+ * on error.  NULL data is considered to be an error.
+ */
+int nl_fifo_prepend(struct nl_fifo *l, void *data)
+{
+	struct nl_fifo_element *e = nl_fifo_allocate_new_element(l, data);
+	if (e == NULL) {
+		return -1;
+	}
+
+	// If it ever comes down to it, there's probably a slightly faster way
+	// to organize the list, to avoid these conditionals.
+	if(l->count == 0) {
+		l->first = e;
+		l->last = e;
+	} else {
+		e->next = l->first;
+		l->first = e;
 	}
 
 	l->count++;

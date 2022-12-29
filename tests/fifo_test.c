@@ -1,6 +1,6 @@
 /*
  * Tests struct nl_fifo.
- * Copyright (C)2009, 2014 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2009, 2014, 2022 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #include <stdio.h>
 #include "nlutils.h"
@@ -12,7 +12,7 @@
 	ERROR_OUT("FIFO count: %d\n", fifo->count);\
 }
 
-int test_put(struct nl_fifo* fifo, void *put, unsigned int count)
+static int test_put(struct nl_fifo *fifo, void *put, unsigned int count)
 {
 	unsigned int oldcount = fifo->count;
 	int error = 0;
@@ -32,11 +32,41 @@ int test_put(struct nl_fifo* fifo, void *put, unsigned int count)
 		ERROR_OUT("Expected count of %d after nl_fifo_put(), actually %d.\n", count, fifo->count);
 		error = -1;
 	}
-	
+
 	return error;
 }
 
-int test_get(struct nl_fifo *fifo, char *expected, unsigned int count)
+static int test_prepend(struct nl_fifo *fifo, void *prepend, unsigned int count)
+{
+	unsigned int oldcount = fifo->count;
+	int error = 0;
+
+	if (nl_fifo_prepend(fifo, prepend) != (int)oldcount + 1) {
+		ERROR_OUT("nl_fifo_prepend() of %p failed.\n", prepend);
+		error = -1;
+	}
+
+	if (fifo->count != oldcount + 1) {
+		ERROR_OUT("Count unchanged or changed incorrectly from %d to %d after nl_fifo_prepend().\n",
+				oldcount, fifo->count);
+		error = -1;
+	}
+
+	if (fifo->count != count) {
+		ERROR_OUT("Expected count of %d after nl_fifo_prepend(), actually %d.\n", count, fifo->count);
+		error = -1;
+	}
+
+	void *peek = nl_fifo_peek(fifo);
+	if (peek != prepend) {
+		ERROR_OUT("Expected fifo to start with newly prepended value %p, but got %p.\n", prepend, peek);
+		error = -1;
+	}
+
+	return error;
+}
+
+static int test_get(struct nl_fifo *fifo, char *expected, unsigned int count)
 {
 	char *result;
 	unsigned int oldcount = fifo->count;
@@ -62,7 +92,7 @@ int test_get(struct nl_fifo *fifo, char *expected, unsigned int count)
 	return error;
 }
 
-int test_peek(struct nl_fifo *fifo, char *expected, unsigned int count)
+static int test_peek(struct nl_fifo *fifo, char *expected, unsigned int count)
 {
 	char *result;
 	unsigned int oldcount = fifo->count;
@@ -87,7 +117,7 @@ int test_peek(struct nl_fifo *fifo, char *expected, unsigned int count)
 	return error;
 }
 
-int test_remove(struct nl_fifo *fifo, void *remove, unsigned int count)
+static int test_remove(struct nl_fifo *fifo, void *remove, unsigned int count)
 {
 	unsigned int oldcount = fifo->count;
 	int error = 0;
@@ -111,7 +141,7 @@ int test_remove(struct nl_fifo *fifo, void *remove, unsigned int count)
 	return error;
 }
 
-int test_next(struct nl_fifo *fifo, const struct nl_fifo_element **iter, char *expected)
+static int test_next(struct nl_fifo *fifo, const struct nl_fifo_element **iter, char *expected)
 {
 	int error = 0;
 	char *result;
@@ -129,7 +159,7 @@ int test_next(struct nl_fifo *fifo, const struct nl_fifo_element **iter, char *e
 	return error;
 }
 
-void test_clear_cb(__attribute__((unused)) void *element, void *user_data)
+static void test_clear_cb(__attribute__((unused)) void *element, void *user_data)
 {
 	int *counter = user_data;
 	printf("In the clear callback with %d\n", *counter);
@@ -141,6 +171,7 @@ int main(void)
 	char *str1 = "Test 1";
 	char *str2 = "Test 2";
 	char *str3 = "Test 3";
+	char *str4 = "Test 4";
 
 	const struct nl_fifo_element *iter;
 	struct nl_fifo *f1, *f2;
@@ -181,7 +212,7 @@ int main(void)
 		ERR(f1, "No error getting from a NULL FIFO.\n");
 		return -1;
 	}
-	
+
 	if(!nl_fifo_put(NULL, str1) || !nl_fifo_put(NULL, NULL)) {
 		ERR(f1, "No error adding to a NULL FIFO.\n");
 		return -1;
@@ -310,10 +341,33 @@ int main(void)
 		return -1;
 	}
 
+	INFO_OUT("Testing removal on many-element FIFO.\n");
+
+	for (i = 0; i < 5; i++) {
+		if (test_prepend(f1, str4, i + 203)) {
+			ERR(f1, "Error prepending %s to FIFO.\n", str4);
+			return -1;
+		}
+	}
+	if (test_remove(f1, str1, 206)) {
+		ERR(f1, "Error removing the first %s from the FIFO.\n", str1);
+		return -1;
+	}
+	if (test_remove(f1, str4, 205)) {
+		ERR(f1, "Error removing the first element %s from the FIFO.\n", str4);
+		return -1;
+	}
+
 	// Test iteration
 	INFO_OUT("Testing iteration on many-element FIFO.\n");
 	iter = NULL;
-	for(i = 0; i < 100; i++) {
+	for (i = 0; i < 4; i++) {
+		if (test_next(f1, &iter, str4)) {
+			ERR(f1, "Error iterating over copies of %s.\n", str4);
+			return -1;
+		}
+	}
+	for(i = 0; i < 99; i++) {
 		if(test_next(f1, &iter, str1)) {
 			ERR(f1, "Error iterating over copies of %s.\n", str1);
 			return -1;
@@ -339,6 +393,19 @@ int main(void)
 	}
 
 	INFO_OUT("Testing removal on many-element FIFO.\n");
+
+	// Revert the changes made by prepend testing
+	for (i = 0; i < 4; i++) {
+		if (test_get(f1, str4, 204 - i)) {
+			ERR(f1, "Error removing first entry from FIFO.\n");
+			return -1;
+		}
+	}
+	if (test_prepend(f1, str1, 202)) {
+		ERR(f1, "Error prepending to FIFO.\n");
+		return -1;
+	}
+
 	if(test_get(f1, str1, 201)) {
 		ERR(f1, "Error removing first entry from FIFO.\n");
 		return -1;
@@ -348,7 +415,7 @@ int main(void)
 		ERR(f1, "Error removing a middle entry (%s) from FIFO.\n", str3);
 		return -1;
 	}
-	
+
 	if(test_remove(f1, str2, 199)) {
 		ERR(f1, "Error removing a middle entry (%s) from FIFO.\n", str2);
 		return -1;
@@ -601,7 +668,7 @@ int main(void)
 	}
 
 	nl_fifo_destroy(f1);
-	
+
 
 	// Test clearing a NULL fifo (double-check behavior with Valgrind to be sure)
 	nl_fifo_clear(NULL);
