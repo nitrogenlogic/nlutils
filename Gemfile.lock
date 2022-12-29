@@ -18,9 +18,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  bundler (~> 1.17)
   pry
   pry-byebug
   rdiscount
 
 BUNDLED WITH
-   1.15.4
+   1.17.3
