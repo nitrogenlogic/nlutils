@@ -1,9 +1,10 @@
 libnlutils
 ==========
 
-This project contains [well-tested ![Build Status](https://travis-ci.org/nitrogenlogic/nlutils.svg?branch=master)](https://travis-ci.org/nitrogenlogic/nlutils) basic utility functions and data structures
-for Nitrogen Logic C programs.  It also contains tools for cross-compiling code
-and building firmware images for Nitrogen Logic controllers.
+This project contains [well-tested ![Tests](https://github.com/nitrogenlogic/nlutils/actions/workflows/test.yml/badge.svg)](https://github.com/nitrogenlogic/nlutils/actions/workflows/test.yml)
+basic utility functions and data structures for Nitrogen Logic C programs.  It
+also contains tools for cross-compiling code and building firmware images for
+Nitrogen Logic controllers.
 
 Functions include:
 
