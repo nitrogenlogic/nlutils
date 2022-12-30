@@ -18,7 +18,7 @@ struct nl_fifo_element;
 struct nl_fifo {
 	struct nl_fifo_element *first;	// First will always have a valid element, or NULL
 	struct nl_fifo_element *last;	// Last may have invalid data if count==0
-	unsigned int count;
+	unsigned int count; // TODO: make this size_t or ssize_t
 };
 
 /*
@@ -128,6 +128,22 @@ unsigned int nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*
  * This is not a thread-safe operation.
  */
 unsigned int nl_fifo_remove_last(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data);
+
+/*
+ * Removes all elements from src and prepends them to the beginning of dest.
+ * Afterward, nl_fifo_get(dest) would return all the elements from src first,
+ * then all the elements from dest.  Returns the resulting number of elements
+ * in dest.
+ */
+unsigned int nl_fifo_concat_start(struct nl_fifo *src, struct nl_fifo *dest);
+
+/*
+ * Removes all elements from src and concatenates them to the end of dest.
+ * Afterward, nl_fifo_get(dest) would return all the elements from dest first,
+ * then all the elements from src.  Returns the resulting number of elements in
+ * dest.
+ */
+unsigned int nl_fifo_concat_end(struct nl_fifo *src, struct nl_fifo *dest);
 
 
 #ifdef __cplusplus

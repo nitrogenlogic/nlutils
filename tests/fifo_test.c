@@ -16,10 +16,10 @@
 
 #define ASSERT_COUNT(fifo, expected_count, ...) do { \
 	unsigned int fifo_count##__LINE__ = fifo ? fifo->count : 0; \
-	if (fifo_count##__LINE__ != expected_count) { \
+	if (fifo_count##__LINE__ != (expected_count)) { \
 		ERROR_OUT(__VA_ARGS__); \
 		ERROR_OUT_EX(": Expected fifo %p (%s) to have count %u (%s) but got count %u\n", \
-				fifo, #fifo, expected_count, #expected_count, fifo_count##__LINE__); \
+				fifo, #fifo, (expected_count), #expected_count, fifo_count##__LINE__); \
 		abort(); \
 	} \
 } while(0);
@@ -78,7 +78,7 @@ static int test_prepend(struct nl_fifo *fifo, void *prepend, unsigned int count)
 	return error;
 }
 
-static int test_get(struct nl_fifo *fifo, char *expected, unsigned int count)
+static int test_get(struct nl_fifo *fifo, const char *expected, unsigned int count)
 {
 	char *result;
 	unsigned int oldcount = fifo->count;
@@ -219,10 +219,11 @@ static void test_remove_first(struct nl_fifo *fifo, unsigned int count, void (*c
 		expected_delta = start - count;
 	}
 
-	nl_fifo_remove_first(fifo, count, cb, user_data);
+	unsigned int result = nl_fifo_remove_first(fifo, count, cb, user_data);
 
 	ASSERT_COUNT(fifo, expected_delta, "delta after remove_first from %u with count %u", start, count);
 	ASSERT_COUNT(fifo, expected_count, "final count after remove_first");
+	ASSERT_COUNT(fifo, result, "fifo count matches return value from remove_first");
 }
 
 static void test_remove_last(struct nl_fifo *fifo, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data, unsigned int expected_count)
@@ -236,10 +237,11 @@ static void test_remove_last(struct nl_fifo *fifo, unsigned int count, void (*cb
 		expected_delta = start - count;
 	}
 
-	nl_fifo_remove_last(fifo, count, cb, user_data);
+	unsigned int result = nl_fifo_remove_last(fifo, count, cb, user_data);
 
 	ASSERT_COUNT(fifo, expected_delta, "delta after remove_last from %u with count %u", start, count);
 	ASSERT_COUNT(fifo, expected_count, "final count after remove_last");
+	ASSERT_COUNT(fifo, result, "fifo count matches return value from remove_last");
 }
 
 static int test_remove_first_and_last(void)
@@ -358,10 +360,161 @@ static int test_remove_first_and_last(void)
 	return 0;
 }
 
+static void test_concat_start(struct nl_fifo *src, struct nl_fifo *dest, unsigned int expected)
+{
+	unsigned int src_start = src ? src->count : 0;
+	unsigned int dest_start = dest ? dest->count : 0;
+	unsigned int dest_expect = dest ? src_start + dest_start : 0;
+
+	unsigned int result = nl_fifo_concat_start(src, dest);
+
+	ASSERT_COUNT(dest, result, "dest count should match return value");
+	ASSERT_COUNT(src, dest ? 0 : src_start, "source should be empty unless dest was null");
+	ASSERT_COUNT(dest, expected, "expecting a count of %u", expected);
+	ASSERT_COUNT(dest, dest_expect,
+			"expecting dest count to be sum of old count %u and src count %u",
+			dest_start, src_start);
+}
+
+static void test_concat_end(struct nl_fifo *src, struct nl_fifo *dest, unsigned int expected)
+{
+	unsigned int src_start = src ? src->count : 0;
+	unsigned int dest_start = dest ? dest->count : 0;
+	unsigned int dest_expect = dest ? src_start + dest_start : 0;
+
+	unsigned int result = nl_fifo_concat_end(src, dest);
+
+	ASSERT_COUNT(dest, result, "dest count should match return value");
+	ASSERT_COUNT(src, dest ? 0 : src_start, "source should be empty unless dest was null");
+	ASSERT_COUNT(dest, expected, "expecting a count of %u", expected);
+	ASSERT_COUNT(dest, dest_expect,
+			"expecting dest count to be sum of old count %u and src count %u",
+			dest_start, src_start);
+}
+
+static int test_concat(void)
+{
+	char *str1 = "first";
+	char *str2 = "second";
+	char *str3 = "third";
+
+	INFO_OUT("Testing nl_fifo_concat_start and nl_fifo_concat_end\n");
+
+	struct nl_fifo *f1 = nl_fifo_create();
+	struct nl_fifo *f2 = nl_fifo_create();
+	struct nl_fifo *f3 = nl_fifo_create();
+	if (CHECK_NULL(f1) || CHECK_NULL(f2) || CHECK_NULL(f3)) {
+		ERRNO_OUT("Error allocating fifos");
+		return -1;
+	}
+
+
+	INFO_OUT("\tTesting with NULL and empty lists\n");
+	test_concat_start(NULL, NULL, 0);
+	test_concat_start(NULL, f2, 0);
+	test_concat_start(f1, NULL, 0);
+	test_concat_start(f1, f2, 0);
+	test_concat_end(NULL, NULL, 0);
+	test_concat_end(NULL, f2, 0);
+	test_concat_end(f1, NULL, 0);
+	test_concat_end(f1, f2, 0);
+
+
+	INFO_OUT("\tTesting nl_fifo_concat_start\n");
+	add_fifo_elements(f1, str1, 5);
+	add_fifo_elements(f2, str2, 5);
+	test_concat_start(f1, f2, 10);
+	test_get(f1, NULL, 0);
+	test_get(f2, str1, 9);
+	test_concat_start(f2, f1, 9);
+	test_get(f1, str1, 8);
+	test_get(f2, NULL, 0);
+
+	// null and empty
+	test_concat_start(f3, f1, 8);
+	test_concat_start(NULL, f1, 8);
+	test_concat_start(f1, NULL, 0);
+
+	const struct nl_fifo_element *iter = NULL;
+	void *data;
+	unsigned int iter_count = 0;
+	while ((data = nl_fifo_next(f1, &iter))) {
+		// This loop just makes sure iteration still works across both lists
+		DEBUG_OUT("\t\tGot %s\n", (char *)data);
+		iter_count += 1;
+	}
+	ASSERT_COUNT(f1, iter_count, "Should iterate over all elements after concat_start");
+
+	for (int i = 0; i < 3; i++) {
+		test_get(f1, str1, 7 - i);
+	}
+	for (int i = 0; i < 5; i++) {
+		test_get(f1, str2, 4 - i);
+	}
+
+
+	INFO_OUT("\tTesting nl_fifo_concat_end\n");
+	add_fifo_elements(f1, str1, 5);
+	add_fifo_elements(f2, str2, 5);
+	test_concat_end(f1, f2, 10);
+	test_get(f1, NULL, 0);
+	test_get(f2, str2, 9);
+	test_concat_end(f2, f1, 9);
+	test_get(f1, str2, 8);
+	test_get(f2, NULL, 0);
+
+	// null and empty
+	test_concat_end(f3, f1, 8);
+	test_concat_end(NULL, f1, 8);
+	test_concat_end(f1, NULL, 0);
+
+	iter = NULL;
+	iter_count = 0;
+	while ((data = nl_fifo_next(f1, &iter))) {
+		// This loop just makes sure iteration still works across both lists
+		DEBUG_OUT("\t\tGot %s\n", (char *)data);
+		iter_count += 1;
+	}
+	ASSERT_COUNT(f1, iter_count, "Should iterate over all elements after concat_end");
+
+	for (int i = 0; i < 3; i++) {
+		test_get(f1, str2, 7 - i);
+	}
+	for (int i = 0; i < 5; i++) {
+		test_get(f1, str1, 4 - i);
+	}
+
+
+	INFO_OUT("\tTesting a mix of concat_start and concat_end\n");
+	add_fifo_elements(f1, str1, 2);
+	add_fifo_elements(f2, str2, 1);
+	add_fifo_elements(f3, str3, 3);
+
+	test_concat_start(f2, f1, 3);
+	test_concat_end(f3, f1, 6);
+	test_concat_start(f2, f1, 6);
+	test_concat_end(f3, f1, 6);
+	test_concat_start(f1, f2, 6);
+	test_concat_end(f2, f1, 6);
+
+	test_get(f1, str1, 5);
+	test_get(f1, str1, 4);
+	test_get(f1, str3, 3);
+	test_get(f1, str3, 2);
+	test_get(f1, str3, 1);
+	test_get(f1, str1, 0);
+
+	nl_fifo_destroy(f3);
+	nl_fifo_destroy(f2);
+	nl_fifo_destroy(f1);
+
+	return 0;
+}
+
 static void test_clear_cb(__attribute__((unused)) void *element, void *user_data)
 {
 	int *counter = user_data;
-	printf("In the clear callback with %d\n", *counter);
+	DEBUG_OUT("In the clear callback with %d\n", *counter);
 	(*counter)++;
 }
 
@@ -875,6 +1028,10 @@ int main(void)
 
 	// Test remove_first and remove_last functions
 	if (test_remove_first_and_last()) {
+		return -1;
+	}
+
+	if (test_concat()) {
 		return -1;
 	}
 

@@ -179,6 +179,10 @@ void *nl_fifo_get(struct nl_fifo *l)
 	data = e->data;
 	l->first = e->next;
 	free(e);
+
+	if (l->first == NULL) {
+		l->last = NULL;
+	}
 	
 	l->count--;
 
@@ -413,4 +417,83 @@ unsigned int nl_fifo_remove_last(struct nl_fifo *l, unsigned int count, void (*c
 	prev->next = NULL;
 
 	return l->count;
+}
+
+/*
+ * Removes all elements from src and prepends them to the beginning of dest.
+ * Afterward, nl_fifo_get(dest) would return all the elements from src first,
+ * then all the elements from dest.  Returns the resulting number of elements
+ * in dest.
+ */
+unsigned int nl_fifo_concat_start(struct nl_fifo *src, struct nl_fifo *dest)
+{
+	if (CHECK_NULL(src) || CHECK_NULL(dest)) {
+		return dest ? dest->count : 0;
+	}
+
+	struct nl_fifo_element *src_first = src->first;
+	struct nl_fifo_element *src_last = src->last;
+
+	src->first = NULL;
+	src->last = NULL;
+
+	struct nl_fifo_element *cur = src_first;
+	while (cur != NULL) {
+		cur->l = dest;
+		cur = cur->next;
+	}
+
+	if (src->count > 0) {
+		src_last->next = dest->first;
+		dest->first = src_first;
+
+		if (dest->count == 0) {
+			dest->last = src_last;
+		}
+	}
+
+	dest->count += src->count;
+	src->count = 0;
+
+	return dest->count;
+}
+
+/*
+ * Removes all elements from src and concatenates them to the end of dest.
+ * Afterward, nl_fifo_get(dest) would return all the elements from dest first,
+ * then all the elements from src.  Returns the resulting number of elements in
+ * dest.
+ */
+unsigned int nl_fifo_concat_end(struct nl_fifo *src, struct nl_fifo *dest)
+{
+	if (CHECK_NULL(src) || CHECK_NULL(dest)) {
+		return dest ? dest->count : 0;
+	}
+
+	struct nl_fifo_element *src_first = src->first;
+	struct nl_fifo_element *src_last = src->last;
+
+	src->first = NULL;
+	src->last = NULL;
+
+	struct nl_fifo_element *cur = src_first;
+	while (cur != NULL) {
+		cur->l = dest;
+		cur = cur->next;
+	}
+
+	if (src->count > 0) {
+		if (dest->last) {
+			dest->last->next = src_first;
+		} else {
+			dest->first = src_first;
+		}
+
+		dest->last = src_last;
+	}
+
+	dest->count += src->count;
+	src->count = 0;
+
+	return dest->count;
 }
