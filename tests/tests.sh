@@ -235,6 +235,7 @@ runtest true 'URL function tests' \
 
 # Test URL request processing functions
 headline 'Testing URL request functions'
+printf "\033[1;34mCurl version: \e[0;1m$(curl --version)\e[0m\n\n"
 start_server ./url_req/url_req_server.rb
 runtest true 'URL request function tests' \
 	./url_req/url_req_test
