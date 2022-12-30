@@ -1,9 +1,12 @@
 libnlutils
 ==========
 
-This project contains [well-tested ![Build Status](https://travis-ci.org/nitrogenlogic/nlutils.svg?branch=master)](https://travis-ci.org/nitrogenlogic/nlutils) basic utility functions and data structures
-for Nitrogen Logic C programs.  It also contains tools for cross-compiling code
-and building firmware images for Nitrogen Logic controllers.
+*See the [Copying](#copying) section below!*
+
+This project contains [well-tested ![Tests](https://github.com/nitrogenlogic/nlutils/actions/workflows/test.yml/badge.svg)](https://github.com/nitrogenlogic/nlutils/actions/workflows/test.yml)
+basic utility functions and data structures for Nitrogen Logic C programs.  It
+also contains tools for cross-compiling code and building firmware images for
+Nitrogen Logic controllers.
 
 Functions include:
 
@@ -43,7 +46,7 @@ serve as a reference to anyone who might find it useful.
 
 # Copying
 
-Copyright 2011-2018 Mike Bourgeous, licensed under [GNU Affero GPLv3][0].  See
+Copyright 2011-2022 Mike Bourgeous, licensed under [GNU Affero GPLv3][0].  See
 LICENSE for the complete text of the license.
 
 Why AGPLv3?  Because this code probably shouldn't be used for new development.

@@ -1,12 +1,12 @@
 /*
  * Wrapper for the curl (and possibly wget in the future) command.
  *
- * The libcurl library shows way too many errors with Valgrind to be used in
- * code that needs to pass Valgrind checks.
+ * This allows process isolation of web requests, but is slower than using
+ * libcurl directly would have been.
  *
  * Modified from curl_stdin.c in the learning_libcurl experiment repository.
  *
- * Copyright (C)2015-2017 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2015-2022 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -658,8 +658,8 @@ static int write_time_option(int fd, char *key, int milliseconds)
 	return write_option(fd, key, 0, parambuf, 0, NULL);
 }
 
-// Callback for nl_hash_iterate() to write headers to curl's stdin.  Sets
-// writefd to -1 to signal failure to nl_url_req_add().
+// Callback for nl_hash_iterate() to write headers to curl's options fifo.
+// Sets writefd to -1 to signal failure to nl_url_req_add().
 static int header_hash_callback(void *data, char *key, char *value)
 {
 	int *writeptr = data;
@@ -999,6 +999,8 @@ static int start_curl(struct nl_url_req *req)
 		goto error;
 	}
 
+	DEBUG_OUT("/usr/bin/curl -K %s --compressed -s -v -X %s -H Expect: -H \"Connection: close\" -H Transfer-Encoding:\n", opt_fifo, req->result.method);
+
 	// Start the curl process (see the curl manual page)
 	// -K -- read options from FIFO
 	// -s -- silent (disables progress meter)
@@ -1091,8 +1093,10 @@ static int start_curl(struct nl_url_req *req)
 			goto error;
 		}
 
-		if(write_option(writefd, "upload-file", 0, "-", 0, NULL)) {
-			goto error;
+		if (req->params.body.size > 0) {
+			if(write_option(writefd, "upload-file", 0, "-", 0, NULL)) {
+				goto error;
+			}
 		}
 	}
 

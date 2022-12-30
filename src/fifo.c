@@ -1,6 +1,6 @@
 /*
  * fifo.c - A generic FIFO implementation using a linked list.
- * Copyright (C)2009, 2014-2019 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2009, 2014-2022 Mike Bourgeous.  Released under AGPLv3 in 2018.
  *
  * Copied from the logic system project.
  *
@@ -80,26 +80,42 @@ void nl_fifo_destroy(struct nl_fifo *l)
 }
 
 /*
- * Adds a new element to the fifo.  The return value is the number of elements
- * in the fifo after the new element is added, or negative on error.  NULL data
- * is considered to be an error.
+ * Checks for NULL parameters and allocates a new element.  Returns NULL if
+ * either NULL checks or allocation failed.  For use by nl_fifo_put() and
+ * nl_fifo_prepend().
  */
-int nl_fifo_put(struct nl_fifo *l, void *data)
+static struct nl_fifo_element *nl_fifo_allocate_new_element(struct nl_fifo *l, void *data)
 {
 	struct nl_fifo_element *e;
 
 	if(CHECK_NULL(l) || CHECK_NULL(data)) {
-		return -1;
+		return NULL;
 	}
 
 	e = malloc(sizeof(struct nl_fifo_element));
 	if(e == NULL) {
 		ERRNO_OUT("Error allocating new fifo element");
-		return -1;
+		return NULL;
 	}
 	e->data = data;
 	e->next = NULL;
 	e->l = l;
+
+	return e;
+}
+
+
+/*
+ * Adds a new element to the end of the fifo.  The return value is the number
+ * of elements in the fifo after the new element is added, or negative on
+ * error.  NULL data is considered to be an error.
+ */
+int nl_fifo_put(struct nl_fifo *l, void *data)
+{
+	struct nl_fifo_element *e = nl_fifo_allocate_new_element(l, data);
+	if (e == NULL) {
+		return -1;
+	}
 
 	// If it ever comes down to it, there's probably a slightly faster way
 	// to organize the list, to avoid these conditionals.
@@ -109,6 +125,33 @@ int nl_fifo_put(struct nl_fifo *l, void *data)
 	} else {
 		l->last->next = e;
 		l->last = e;
+	}
+
+	l->count++;
+
+	return l->count;
+}
+
+/*
+ * Prepends an element to the beginning of the fifo.  The return value is the
+ * number of elements in the fifo after the new element is added, or negative
+ * on error.  NULL data is considered to be an error.
+ */
+int nl_fifo_prepend(struct nl_fifo *l, void *data)
+{
+	struct nl_fifo_element *e = nl_fifo_allocate_new_element(l, data);
+	if (e == NULL) {
+		return -1;
+	}
+
+	// If it ever comes down to it, there's probably a slightly faster way
+	// to organize the list, to avoid these conditionals.
+	if(l->count == 0) {
+		l->first = e;
+		l->last = e;
+	} else {
+		e->next = l->first;
+		l->first = e;
 	}
 
 	l->count++;
@@ -136,6 +179,10 @@ void *nl_fifo_get(struct nl_fifo *l)
 	data = e->data;
 	l->first = e->next;
 	free(e);
+
+	if (l->first == NULL) {
+		l->last = NULL;
+	}
 	
 	l->count--;
 
@@ -205,7 +252,7 @@ int nl_fifo_remove(struct nl_fifo *l, void *data)
  * call, *iter should be NULL.  For subsequent calls, *iter should be
  * unmodified.  The FIFO should be modifiable in the following ways while
  * iterating:
- * 
+ *
  *  - Removing any element before the current element
  *  - Removing any element after the current element
  *  - Adding an element to the end of the list (the new element will not be
@@ -270,27 +317,183 @@ void nl_fifo_clear(struct nl_fifo *l)
 
 /*
  * Removes all elements from the FIFO, calling the given callback (if not NULL)
- * for each element first.  This may be used e.g. to free memory.
+ * for each element before its removal.  The callback may be used e.g. to free
+ * memory pointed to by each element.
  *
  * This is not a thread-safe operation.
  */
 void nl_fifo_clear_cb(struct nl_fifo *l, void (*cb)(void *el, void *user_data), void *user_data)
 {
-	if(l != NULL) {
-		struct nl_fifo_element *cur = l->first;
-		struct nl_fifo_element *next;
+	if (CHECK_NULL(l)) {
+		return;
+	}
 
-		while(cur != NULL) {
-			next = cur->next;
-			if(cb != NULL) {
-				cb(cur->data, user_data);
-			}
-			free(cur);
-			cur = next;
+	nl_fifo_remove_start(l, l->count, cb, user_data);
+}
+
+/*
+ * Removes the first count elements from the FIFO, calling the given callback
+ * (if not NULL) for each element before its removal.  Returns the number of
+ * elements remaining after removal, or 0 if the fifo was NULL.
+ *
+ * This is not a thread-safe operation.
+ */
+unsigned int nl_fifo_remove_start(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
+{
+	if (CHECK_NULL(l)) {
+		return 0;
+	}
+
+	struct nl_fifo_element *cur = l->first;
+	struct nl_fifo_element *next;
+	unsigned int i = 0;
+
+	for (i = 0; i < count && cur != NULL; i++) {
+		next = cur->next;
+		if(cb != NULL) {
+			cb(cur->data, user_data);
+		}
+		free(cur);
+		cur = next;
+		l->count -= 1;
+	}
+
+	l->first = cur;
+
+	if (cur == NULL) {
+		l->last = NULL;
+	}
+
+	return l->count;
+}
+
+/*
+ * Removes the last count elements from the FIFO, calling the given callback
+ * (if not NULL) for each element before its removal.  Returns the number of
+ * elements remaining after removal, or 0 if the fifo was NULL.
+ *
+ * This is not a thread-safe operation.
+ */
+unsigned int nl_fifo_remove_end(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
+{
+	if (CHECK_NULL(l)) {
+		return 0;
+	}
+
+	if (count >= l->count) {
+		// Remove everything
+		nl_fifo_clear_cb(l, cb, user_data);
+		return 0;
+	}
+
+	unsigned int start_offset = l->count - count;
+
+	struct nl_fifo_element *cur = l->first;
+	struct nl_fifo_element *prev = NULL;
+	struct nl_fifo_element *next = NULL;
+	unsigned int i = 0;
+	for (i = 0; i < start_offset; i++) {
+		prev = cur;
+		cur = cur->next;
+	}
+
+	// Because of the count comparison above, prev should never be null
+	if (CHECK_NULL(prev)) {
+		ERROR_OUT("BUG: previous pointer is NULL after iterating to start_offset\n");
+		abort();
+	}
+
+	for (i = 0; i < count && cur != NULL; i++) {
+		next = cur->next;
+		if(cb != NULL) {
+			cb(cur->data, user_data);
+		}
+		free(cur);
+		cur = next;
+		l->count -= 1;
+	}
+
+	l->last = prev;
+	prev->next = NULL;
+
+	return l->count;
+}
+
+/*
+ * Removes all elements from src and prepends them to the beginning of dest.
+ * Afterward, nl_fifo_get(dest) would return all the elements from src first,
+ * then all the elements from dest.  Returns the resulting number of elements
+ * in dest.
+ */
+unsigned int nl_fifo_concat_start(struct nl_fifo *src, struct nl_fifo *dest)
+{
+	if (CHECK_NULL(src) || CHECK_NULL(dest)) {
+		return dest ? dest->count : 0;
+	}
+
+	struct nl_fifo_element *src_first = src->first;
+	struct nl_fifo_element *src_last = src->last;
+
+	src->first = NULL;
+	src->last = NULL;
+
+	struct nl_fifo_element *cur = src_first;
+	while (cur != NULL) {
+		cur->l = dest;
+		cur = cur->next;
+	}
+
+	if (src->count > 0) {
+		src_last->next = dest->first;
+		dest->first = src_first;
+
+		if (dest->count == 0) {
+			dest->last = src_last;
+		}
+	}
+
+	dest->count += src->count;
+	src->count = 0;
+
+	return dest->count;
+}
+
+/*
+ * Removes all elements from src and concatenates them to the end of dest.
+ * Afterward, nl_fifo_get(dest) would return all the elements from dest first,
+ * then all the elements from src.  Returns the resulting number of elements in
+ * dest.
+ */
+unsigned int nl_fifo_concat_end(struct nl_fifo *src, struct nl_fifo *dest)
+{
+	if (CHECK_NULL(src) || CHECK_NULL(dest)) {
+		return dest ? dest->count : 0;
+	}
+
+	struct nl_fifo_element *src_first = src->first;
+	struct nl_fifo_element *src_last = src->last;
+
+	src->first = NULL;
+	src->last = NULL;
+
+	struct nl_fifo_element *cur = src_first;
+	while (cur != NULL) {
+		cur->l = dest;
+		cur = cur->next;
+	}
+
+	if (src->count > 0) {
+		if (dest->last) {
+			dest->last->next = src_first;
+		} else {
+			dest->first = src_first;
 		}
 
-		l->first = NULL;
-		l->last = NULL;
-		l->count = 0;
+		dest->last = src_last;
 	}
+
+	dest->count += src->count;
+	src->count = 0;
+
+	return dest->count;
 }
