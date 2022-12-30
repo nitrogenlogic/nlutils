@@ -263,7 +263,6 @@ static int test_remove_first_and_last(void)
 	add_fifo_elements(fifo, first_data, 50);
 	ASSERT_COUNT(fifo, 50, "add for remove_first");
 
-	// TODO
 	// Test remove_first without a callback
 	// Test remove_first with a callback
 	// Test remove_first with a count of 0
@@ -287,12 +286,18 @@ static int test_remove_first_and_last(void)
 	add_fifo_elements(fifo, last_data, 50);
 	ASSERT_COUNT(fifo, 50, "add for remove_last");
 
-	// TODO
 	// Test remove_last without a callback
 	// Test remove_last with a callback
 	// Test remove_last with a count of 0
 	// Test remove_last with a count equal to the list size
 	// Test remove_last with a count greater than the list size
+	test_remove_last(fifo, 2, NULL, NULL, 48);
+	test_remove_last(fifo, 1, test_remove_cb, &last_cb_count, 47);
+	test_remove_last(fifo, 5, test_remove_cb, &last_cb_count, 42);
+	test_remove_last(fifo, 0, test_remove_cb, &last_cb_count, 42);
+	test_remove_last(fifo, 42, test_remove_cb, &last_cb_count, 0);
+	add_fifo_elements(fifo, last_data, 50);
+	test_remove_last(fifo, 60, test_remove_cb, &last_cb_count, 0);
 
 	const unsigned int expected_last = 48 + 60;
 	if (last_cb_count != expected_last) {
