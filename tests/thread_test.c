@@ -74,39 +74,6 @@ static int do_threadname_test(struct threadname_test *test)
 
 #define NUM_THREADS 10
 
-static void *thread_test_func(void *data)
-{
-	intptr_t id = (intptr_t)data;
-	char name[16];
-
-	nl_get_threadname(name);
-
-	usleep(id * 100000);
-
-	INFO_OUT("Thread %td (%s) started, sleeping for %td seconds.\n", id, name, id + 1);
-	sleep(id + 1);
-	INFO_OUT("Thread %td (%s) exiting.\n", id, name);
-
-	return NULL;
-}
-
-static void *thread_name_func(void *data)
-{
-	intptr_t id = (intptr_t)data;
-	char name[16];
-	int ret;
-
-	ret = nl_get_threadname(name);
-	if(ret) {
-		ERROR_OUT("Error getting name in multi-thread test: %d (%s)\n", ret, strerror(ret));
-		exit(-1);
-	}
-
-	INFO_OUT("Name test thread %td: \"%s\".\n", id, name);
-
-	return strdup(name);
-}
-
 static int mutex_tests()
 {
 	int mtx_types[] = { -1, PTHREAD_MUTEX_NORMAL, PTHREAD_MUTEX_RECURSIVE, PTHREAD_MUTEX_ERRORCHECK };
@@ -373,6 +340,46 @@ static void thread_count_cb(struct nl_thread *t, void *count)
 	(*(int *)count)++;
 }
 
+static pthread_mutex_t thread_test_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void *thread_test_func(void *data)
+{
+	intptr_t id = (intptr_t)data;
+	char name[16];
+
+	nl_get_threadname(name);
+
+	usleep(id * 100000);
+
+	if (pthread_mutex_lock(&thread_test_lock) || pthread_mutex_unlock(&thread_test_lock)) {
+		ERRNO_OUT("Error locking or unlocking thread test mutex\n");
+		abort();
+	}
+
+	INFO_OUT("Thread %td (%s) started, sleeping for %td seconds.\n", id, name, id + 1);
+	sleep(id + 1);
+	INFO_OUT("Thread %td (%s) exiting.\n", id, name);
+
+	return NULL;
+}
+
+static void *thread_name_func(void *data)
+{
+	intptr_t id = (intptr_t)data;
+	char name[16];
+	int ret;
+
+	ret = nl_get_threadname(name);
+	if(ret) {
+		ERROR_OUT("Error getting name in multi-thread test: %d (%s)\n", ret, strerror(ret));
+		exit(-1);
+	}
+
+	INFO_OUT("Name test thread %td: \"%s\".\n", id, name);
+
+	return strdup(name);
+}
+
 int main()
 {
 	struct nl_thread_ctx *ctx;
@@ -397,6 +404,11 @@ int main()
 		return -1;
 	}
 
+	if (pthread_mutex_lock(&thread_test_lock)) {
+		ERRNO_OUT("Error locking thread test mutex before thread creation\n");
+		abort();
+	}
+
 	for(i = 0; i < NUM_THREADS; i++) {
 		DEBUG_OUT("Creating thread %zu...\n", i);
 
@@ -408,11 +420,9 @@ int main()
 		}
 	}
 
-	nl_usleep(1 * 1000 * 1000);
-
 	for(i = 0; i < NUM_THREADS; i++) {
 		// TODO: Test SCHED_FIFO if running with sufficient capabilities
-		DEBUG_OUT("Setting thread %zu scheduler to OTHER\n", i);
+		DEBUG_OUT("Setting thread %zu (%s) scheduler to OTHER\n", i, buf);
 
 		ret = nl_set_thread_priority(info[i], SCHED_OTHER, 0);
 		if(ret) {
@@ -422,6 +432,12 @@ int main()
 		}
 	}
 
+	if (pthread_mutex_unlock(&thread_test_lock)) {
+		ERRNO_OUT("Error unlocking thread test mutex\n");
+		abort();
+	}
+
+	INFO_OUT("Joining every other thread starting at thread 2 to verify out-of-order joining\n");
 	for(i = 2; i < NUM_THREADS; i += 2) {
 		INFO_OUT("Joining thread %zu...\n", i);
 
