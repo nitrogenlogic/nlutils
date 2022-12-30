@@ -328,7 +328,7 @@ void nl_fifo_clear_cb(struct nl_fifo *l, void (*cb)(void *el, void *user_data), 
 		return;
 	}
 
-	nl_fifo_remove_first(l, l->count, cb, user_data);
+	nl_fifo_remove_start(l, l->count, cb, user_data);
 }
 
 /*
@@ -338,7 +338,7 @@ void nl_fifo_clear_cb(struct nl_fifo *l, void (*cb)(void *el, void *user_data), 
  *
  * This is not a thread-safe operation.
  */
-unsigned int nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
+unsigned int nl_fifo_remove_start(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
 {
 	if (CHECK_NULL(l)) {
 		return 0;
@@ -374,7 +374,7 @@ unsigned int nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*
  *
  * This is not a thread-safe operation.
  */
-unsigned int nl_fifo_remove_last(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
+unsigned int nl_fifo_remove_end(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
 {
 	if (CHECK_NULL(l)) {
 		return 0;
