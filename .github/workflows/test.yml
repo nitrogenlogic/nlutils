@@ -24,7 +24,7 @@ jobs:
         run: bundle install
       - name: Compile
         # XXX run: make
-        run: echo Building in DEBUG mode; make distclean; make debug; else make; fi
+        run: echo Building in DEBUG mode; make distclean; make debug
       - name: Run tests
         # XXX run: bundle exec make test
         run: TESTS=url_test/url_req_test URL_TEST='POST with URL form' bundle exec make test-debug
