@@ -76,7 +76,7 @@ int nl_fifo_remove(struct nl_fifo *l, void *data);
  * call, *iter should be NULL.  For subsequent calls, *iter should be
  * unmodified.  The FIFO should be modifiable in the following ways while
  * iterating:
- * 
+ *
  *  - Removing any element before the current element
  *  - Removing any element after the current element
  *  - Adding an element to the end of the list (the new element will not be
@@ -105,11 +105,27 @@ void nl_fifo_clear(struct nl_fifo *l);
 
 /*
  * Removes all elements from the FIFO, calling the given callback (if not NULL)
- * for each element first.  This may be used e.g. to free memory.
+ * for each element before its removal.  This may be used e.g. to free memory.
  *
  * This is not a thread-safe operation.
  */
 void nl_fifo_clear_cb(struct nl_fifo *l, void (*cb)(void *el, void *user_data), void *user_data);
+
+/*
+ * Removes the first count elements from the FIFO, calling the given callback
+ * (if not NULL) for each element before its removal.
+ *
+ * This is not a thread-safe operation.
+ */
+void nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data);
+
+/*
+ * Removes the last count elements from the FIFO, calling the given callback
+ * (if not NULL) for each element before its removal.
+ *
+ * This is not a thread-safe operation.
+ */
+void nl_fifo_remove_last(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data);
 
 
 #ifdef __cplusplus
