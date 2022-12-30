@@ -1,7 +1,7 @@
 libnlutils
 ==========
 
-*See the Copying section below!*
+*See the [Copying](#copying) section below!*
 
 This project contains [well-tested ![Tests](https://github.com/nitrogenlogic/nlutils/actions/workflows/test.yml/badge.svg)](https://github.com/nitrogenlogic/nlutils/actions/workflows/test.yml)
 basic utility functions and data structures for Nitrogen Logic C programs.  It
