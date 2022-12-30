@@ -330,6 +330,29 @@ static int test_remove_first_and_last(void)
 		return -1;
 	}
 
+	INFO_OUT("Testing a mix of remove_first, remove_last, and addition (to check internal pointers)\n");
+	add_fifo_elements(fifo, first_data.msg, 5);
+	add_fifo_elements(fifo, last_data.msg, 5);
+	test_remove_first(fifo, 2, test_remove_cb, &first_data, 8);
+	test_remove_last(fifo, 2, test_remove_cb, &last_data, 6);
+
+	test_put(fifo, last_data.msg, 7);
+	test_prepend(fifo, first_data.msg, 8);
+	test_remove_first(fifo, 2, test_remove_cb, &first_data, 6);
+	test_remove_last(fifo, 2, test_remove_cb, &last_data, 4);
+	test_remove_last(fifo, 2, test_remove_cb, &last_data, 2);
+	test_remove_last(fifo, 1, test_remove_cb, &first_data, 1); // At this point last_data should all be gone
+
+	test_prepend(fifo, first_data.msg, 2);
+	test_put(fifo, last_data.msg, 3);
+	test_remove_first(fifo, 2, test_remove_cb, &first_data, 1);
+	test_remove_first(fifo, 1, test_remove_cb, &last_data, 0);
+
+	if (first_data.error != 0 || last_data.error != 0) {
+		ERROR_OUT("Callback for remove_first or remove_last set error: first=%u last=%u (expected 0)\n",
+				first_data.error, last_data.error);
+		return -1;
+	}
 	nl_fifo_destroy(fifo);
 
 	return 0;

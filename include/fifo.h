@@ -113,19 +113,21 @@ void nl_fifo_clear_cb(struct nl_fifo *l, void (*cb)(void *el, void *user_data), 
 
 /*
  * Removes the first count elements from the FIFO, calling the given callback
- * (if not NULL) for each element before its removal.
+ * (if not NULL) for each element before its removal.  Returns the number of
+ * elements remaining after removal, or 0 if the fifo was NULL.
  *
  * This is not a thread-safe operation.
  */
-void nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data);
+unsigned int nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data);
 
 /*
  * Removes the last count elements from the FIFO, calling the given callback
- * (if not NULL) for each element before its removal.
+ * (if not NULL) for each element before its removal.  Returns the number of
+ * elements remaining after removal, or 0 if the fifo was NULL.
  *
  * This is not a thread-safe operation.
  */
-void nl_fifo_remove_last(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data);
+unsigned int nl_fifo_remove_last(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data);
 
 
 #ifdef __cplusplus

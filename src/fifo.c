@@ -329,14 +329,15 @@ void nl_fifo_clear_cb(struct nl_fifo *l, void (*cb)(void *el, void *user_data), 
 
 /*
  * Removes the first count elements from the FIFO, calling the given callback
- * (if not NULL) for each element before its removal.
+ * (if not NULL) for each element before its removal.  Returns the number of
+ * elements remaining after removal, or 0 if the fifo was NULL.
  *
  * This is not a thread-safe operation.
  */
-void nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
+unsigned int nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
 {
 	if (CHECK_NULL(l)) {
-		return;
+		return 0;
 	}
 
 	struct nl_fifo_element *cur = l->first;
@@ -358,24 +359,58 @@ void nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*cb)(void
 	if (cur == NULL) {
 		l->last = NULL;
 	}
+
+	return l->count;
 }
 
 /*
  * Removes the last count elements from the FIFO, calling the given callback
- * (if not NULL) for each element before its removal.
+ * (if not NULL) for each element before its removal.  Returns the number of
+ * elements remaining after removal, or 0 if the fifo was NULL.
  *
  * This is not a thread-safe operation.
  */
-void nl_fifo_remove_last(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
+unsigned int nl_fifo_remove_last(struct nl_fifo *l, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data)
 {
 	if (CHECK_NULL(l)) {
-		return;
+		return 0;
 	}
 
-	// XXX
-	count = count;
-	cb = cb;
-	user_data = user_data;
+	if (count >= l->count) {
+		// Remove everything
+		nl_fifo_clear_cb(l, cb, user_data);
+		return 0;
+	}
 
-	ERROR_OUT("remove_last is not implemented\n");
+	unsigned int start_offset = l->count - count;
+
+	struct nl_fifo_element *cur = l->first;
+	struct nl_fifo_element *prev = NULL;
+	struct nl_fifo_element *next = NULL;
+	unsigned int i = 0;
+	for (i = 0; i < start_offset; i++) {
+		prev = cur;
+		cur = cur->next;
+	}
+
+	// Because of the count comparison above, prev should never be null
+	if (CHECK_NULL(prev)) {
+		ERROR_OUT("BUG: previous pointer is NULL after iterating to start_offset\n");
+		abort();
+	}
+
+	for (i = 0; i < count && cur != NULL; i++) {
+		next = cur->next;
+		if(cb != NULL) {
+			cb(cur->data, user_data);
+		}
+		free(cur);
+		cur = next;
+		l->count -= 1;
+	}
+
+	l->last = prev;
+	prev->next = NULL;
+
+	return l->count;
 }
