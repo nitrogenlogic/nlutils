@@ -408,6 +408,8 @@ int main()
 		}
 	}
 
+	nl_usleep(1 * 1000 * 1000);
+
 	for(i = 0; i < NUM_THREADS; i++) {
 		// TODO: Test SCHED_FIFO if running with sufficient capabilities
 		DEBUG_OUT("Setting thread %zu scheduler to OTHER\n", i);
