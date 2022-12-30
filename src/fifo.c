@@ -357,8 +357,6 @@ void nl_fifo_remove_first(struct nl_fifo *l, unsigned int count, void (*cb)(void
 
 	if (cur == NULL) {
 		l->last = NULL;
-	} else {
-		l->count -= count;
 	}
 }
 
