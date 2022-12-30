@@ -187,12 +187,25 @@ static void add_fifo_elements(struct nl_fifo *fifo, void *data, unsigned int cou
 	}
 }
 
+struct removal_test {
+	char *msg;
+	unsigned int count;
+	unsigned int error;
+};
+
 static void test_remove_cb(void *element, void *user_data)
 {
 	char *msg = element;
-	unsigned int *count = user_data;
-	printf("Entering the removal callback for %s with count %u\n", msg, *count);
-	(*count)++;
+	struct removal_test *info = user_data;
+
+	DEBUG_OUT("Entering the removal callback for %s with count %u\n", msg, info->count);
+
+	if (msg != info->msg) {
+		ERROR_OUT("Wrong message received: expected %s, got %s\n", info->msg, msg);
+		info->error++;
+	}
+
+	info->count++;
 }
 
 static void test_remove_first(struct nl_fifo *fifo, unsigned int count, void (*cb)(void *el, void *user_data), void *user_data, unsigned int expected_count)
@@ -231,10 +244,12 @@ static void test_remove_last(struct nl_fifo *fifo, unsigned int count, void (*cb
 
 static int test_remove_first_and_last(void)
 {
-	char *first_data = "remove_first";
-	char *last_data = "remove_last";
-	unsigned int first_cb_count = 0;
-	unsigned int last_cb_count = 0;
+	struct removal_test first_data = {
+		.msg = "remove_first",
+	};
+	struct removal_test last_data = {
+		.msg = "remove_last",
+	};
 
 	INFO_OUT("Testing nl_fifo_remove_first and nl_fifo_remove_last\n");
 
@@ -248,19 +263,20 @@ static int test_remove_first_and_last(void)
 	// Test remove_first on a NULL list (expect no errors or callback calls)
 	// Test remove_first with a count of 0 on an empty list
 	// Test remove_first with a nonzero count on an empty list
-	test_remove_first(NULL, 50, test_remove_cb, &first_cb_count, 0);
-	test_remove_first(fifo, 0, test_remove_cb, &first_cb_count, 0);
-	test_remove_first(fifo, 50, test_remove_cb, &first_cb_count, 0);
+	test_remove_first(NULL, 50, test_remove_cb, &first_data, 0);
+	test_remove_first(fifo, 0, test_remove_cb, &first_data, 0);
+	test_remove_first(fifo, 50, test_remove_cb, &first_data, 0);
 
 	// Test remove_last on a NULL list (expect no errors or callback calls)
 	// Test remove_last with a count of 0 on an empty list
 	// Test remove_last with a nonzero count on an empty list
-	test_remove_last(NULL, 50, test_remove_cb, &last_cb_count, 0);
-	test_remove_last(fifo, 0, test_remove_cb, &last_cb_count, 0);
-	test_remove_last(fifo, 50, test_remove_cb, &last_cb_count, 0);
+	test_remove_last(NULL, 50, test_remove_cb, &last_data, 0);
+	test_remove_last(fifo, 0, test_remove_cb, &last_data, 0);
+	test_remove_last(fifo, 50, test_remove_cb, &last_data, 0);
+
 
 	INFO_OUT("\tTesting remove_first\n");
-	add_fifo_elements(fifo, first_data, 50);
+	add_fifo_elements(fifo, first_data.msg, 50);
 	ASSERT_COUNT(fifo, 50, "add for remove_first");
 
 	// Test remove_first without a callback
@@ -269,21 +285,26 @@ static int test_remove_first_and_last(void)
 	// Test remove_first with a count equal to the list size
 	// Test remove_first with a count greater than the list size
 	test_remove_first(fifo, 2, NULL, NULL, 48);
-	test_remove_first(fifo, 1, test_remove_cb, &first_cb_count, 47);
-	test_remove_first(fifo, 5, test_remove_cb, &first_cb_count, 42);
-	test_remove_first(fifo, 0, test_remove_cb, &first_cb_count, 42);
-	test_remove_first(fifo, 42, test_remove_cb, &first_cb_count, 0);
-	add_fifo_elements(fifo, first_data, 50);
-	test_remove_first(fifo, 60, test_remove_cb, &first_cb_count, 0);
+	test_remove_first(fifo, 1, test_remove_cb, &first_data, 47);
+	test_remove_first(fifo, 5, test_remove_cb, &first_data, 42);
+	test_remove_first(fifo, 0, test_remove_cb, &first_data, 42);
+	test_remove_first(fifo, 42, test_remove_cb, &first_data, 0);
+	add_fifo_elements(fifo, first_data.msg, 50);
+	test_remove_first(fifo, 60, test_remove_cb, &first_data, 0);
 
 	const unsigned int expected_first = 48 + 50;
-	if (first_cb_count != expected_first) {
-		ERROR_OUT("Expected remove_first callback to be called %u times, but got %u\n", expected_first, first_cb_count);
+	if (first_data.count != expected_first) {
+		ERROR_OUT("Expected remove_first callback to be called %u times, but got %u\n", expected_first, first_data.count);
+		return -1;
+	}
+	if (first_data.error != 0) {
+		ERROR_OUT("Callback for remove_first set error to %u (expected 0)\n", first_data.error);
 		return -1;
 	}
 
+
 	INFO_OUT("\tTesting remove_last\n");
-	add_fifo_elements(fifo, last_data, 50);
+	add_fifo_elements(fifo, last_data.msg, 50);
 	ASSERT_COUNT(fifo, 50, "add for remove_last");
 
 	// Test remove_last without a callback
@@ -292,16 +313,20 @@ static int test_remove_first_and_last(void)
 	// Test remove_last with a count equal to the list size
 	// Test remove_last with a count greater than the list size
 	test_remove_last(fifo, 2, NULL, NULL, 48);
-	test_remove_last(fifo, 1, test_remove_cb, &last_cb_count, 47);
-	test_remove_last(fifo, 5, test_remove_cb, &last_cb_count, 42);
-	test_remove_last(fifo, 0, test_remove_cb, &last_cb_count, 42);
-	test_remove_last(fifo, 42, test_remove_cb, &last_cb_count, 0);
-	add_fifo_elements(fifo, last_data, 50);
-	test_remove_last(fifo, 60, test_remove_cb, &last_cb_count, 0);
+	test_remove_last(fifo, 1, test_remove_cb, &last_data, 47);
+	test_remove_last(fifo, 5, test_remove_cb, &last_data, 42);
+	test_remove_last(fifo, 0, test_remove_cb, &last_data, 42);
+	test_remove_last(fifo, 42, test_remove_cb, &last_data, 0);
+	add_fifo_elements(fifo, last_data.msg, 50);
+	test_remove_last(fifo, 60, test_remove_cb, &last_data, 0);
 
 	const unsigned int expected_last = 48 + 50;
-	if (last_cb_count != expected_last) {
-		ERROR_OUT("Expected remove_last callback to be called %u times, but got %u\n", expected_last, last_cb_count);
+	if (last_data.count != expected_last) {
+		ERROR_OUT("Expected remove_last callback to be called %u times, but got %u\n", expected_last, last_data.count);
+		return -1;
+	}
+	if (last_data.error != 0) {
+		ERROR_OUT("Callback for remove_last set error to %u (expected 0)\n", last_data.error);
 		return -1;
 	}
 
