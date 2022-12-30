@@ -999,6 +999,8 @@ static int start_curl(struct nl_url_req *req)
 		goto error;
 	}
 
+	DEBUG_OUT("/usr/bin/curl -K %s --compressed -s -v -X %s -H Expect: -H \"Connection: close\" -H Transfer-Encoding:\n", opt_fifo, req->result.method);
+
 	// Start the curl process (see the curl manual page)
 	// -K -- read options from FIFO
 	// -s -- silent (disables progress meter)

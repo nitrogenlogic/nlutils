@@ -1,6 +1,6 @@
 /*
  * Tests URL request (url_req) functions.
- * Copyright (C)2015-2017 Mike Bourgeous.  Released under AGPLv3 in 2018.
+ * Copyright (C)2015-2022 Mike Bourgeous.  Released under AGPLv3 in 2018.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +18,7 @@ struct url_req_test {
 
 	unsigned int passed:1; // Set to 1 by callback if test passed
 	unsigned int failed:1; // Set to 1 if test failed (used if passed gets set by callback after an earlier check fails)
+	unsigned int skipped:1; // Set to 1 if test skipped by environment variable
 	unsigned int expect_error:1; // 1 to expect an error in result, 0 to expect success
 	unsigned int expect_timeout:1; // 1 to expect a timeout
 	unsigned int expect_add_error:1; // 1 to expect error adding request
@@ -488,6 +489,15 @@ static void add_test(struct nl_url_ctx *ctx, struct url_req_test *test)
 {
 	int ret;
 
+	char *focus_test = getenv("URL_TEST");
+	if (focus_test != NULL && strlen(focus_test) > 0) {
+		if (strcasecmp(focus_test, test->desc)) {
+			DEBUG_OUT("Skipping test '%s' because env var URL_TEST='%s'\n", test->desc, focus_test);
+			test->skipped = 1;
+			return;
+		}
+	}
+
 	DEBUG_OUT("Adding test '%s'\n", test->desc);
 
 	if(test->headers) {
@@ -521,9 +531,9 @@ static void add_test(struct nl_url_ctx *ctx, struct url_req_test *test)
 // Checks a test request's result (returns nonzero for fail, 0 for pass)
 static int check_test(struct url_req_test *test)
 {
-	if(test->failed || !test->passed) {
-		ERROR_OUT("Test '%s' failed (failed=%u, passed=%u).\n",
-				test->desc, test->failed, test->passed);
+	if(test->failed || !(test->passed || test->skipped)) {
+		ERROR_OUT("Test '%s' failed (failed=%u, passed=%u, skipped=%u).\n",
+				test->desc, test->failed, test->passed, test->skipped);
 		return -1;
 	}
 

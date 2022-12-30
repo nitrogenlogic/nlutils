@@ -23,6 +23,8 @@ jobs:
       - name: Install gem deps
         run: bundle install
       - name: Compile
-        run: make
+        # XXX run: make
+        run: echo Building in DEBUG mode; make distclean; make debug; else make; fi
       - name: Run tests
-        run: bundle exec make test
+        # XXX run: bundle exec make test
+        run: TESTS=url_test/url_req_test URL_TEST='POST with URL form' bundle exec make test-debug
