@@ -276,7 +276,7 @@ static int test_remove_first_and_last(void)
 	add_fifo_elements(fifo, first_data, 50);
 	test_remove_first(fifo, 60, test_remove_cb, &first_cb_count, 0);
 
-	const unsigned int expected_first = 48 + 60;
+	const unsigned int expected_first = 48 + 50;
 	if (first_cb_count != expected_first) {
 		ERROR_OUT("Expected remove_first callback to be called %u times, but got %u\n", expected_first, first_cb_count);
 		return -1;
@@ -299,7 +299,7 @@ static int test_remove_first_and_last(void)
 	add_fifo_elements(fifo, last_data, 50);
 	test_remove_last(fifo, 60, test_remove_cb, &last_cb_count, 0);
 
-	const unsigned int expected_last = 48 + 60;
+	const unsigned int expected_last = 48 + 50;
 	if (last_cb_count != expected_last) {
 		ERROR_OUT("Expected remove_last callback to be called %u times, but got %u\n", expected_last, last_cb_count);
 		return -1;
