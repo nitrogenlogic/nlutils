@@ -91,7 +91,7 @@ int main()
 	check_float(FLT_MAX, -INFINITY, INFINITY, FLT_MAX);
 
 	// test reversed ranges
-	check_float(0, INT_MAX, INT_MIN, INT_MAX);
+	check_float(0, 1 << 15, -(1 << 15), 1 << 15); // was INT_MIN and INT_MAX, but clang complained about values changing when converted to float
 	check_float(0, 3, 1, 3);
 	check_float(1, 3, 1, 3);
 	check_float(2, 3, 1, 3);

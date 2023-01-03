@@ -49,5 +49,8 @@ target_link_libraries(stream_test nlutils)
 add_executable(debug_test debug_test.c)
 target_link_libraries(debug_test nlutils)
 
+add_executable(term_test term_test.c)
+target_link_libraries(term_test nlutils)
+
 file(COPY firmware tests.sh
 	DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
