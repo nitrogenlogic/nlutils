@@ -16,7 +16,13 @@ int test_open_timeout(char *exe)
 	INFO_OUT("Testing nl_open_timeout().\n");
 
 	DEBUG_OUT("Verifying successful opens occur quickly.\n");
-	nl_clock_fromnow(CLOCK_MONOTONIC, &after, (struct timespec){.tv_nsec = 5000000}); // 5ms
+#ifdef DEBUG
+	// Things are slower in debug builds and in the CI pipeline
+	nl_clock_fromnow(CLOCK_MONOTONIC, &after, (struct timespec){.tv_nsec = 150000000}); // 150ms
+#else
+	nl_clock_fromnow(CLOCK_MONOTONIC, &after, (struct timespec){.tv_nsec = 50000000}); // 50ms
+#endif /* DEBUG */
+
 	fd = nl_open_timeout(exe, O_RDONLY, 0, (struct timespec){.tv_sec = 1, .tv_nsec = 0});
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
