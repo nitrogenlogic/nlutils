@@ -26,3 +26,21 @@ jobs:
         run: make
       - name: Run tests
         run: bundle exec make test
+  test-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      - name: Install apt deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install cmake libevent-dev curl ruby valgrind clang gcc build-essential
+      - name: Install gem deps
+        run: bundle install
+      - name: Compile (debug build)
+        run: make debug
+      - name: Run tests (debug build)
+        run: bundle exec make test-debug
