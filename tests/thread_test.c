@@ -422,7 +422,7 @@ int main()
 
 	for(i = 0; i < NUM_THREADS; i++) {
 		// TODO: Test SCHED_FIFO if running with sufficient capabilities
-		DEBUG_OUT("Setting thread %zu (%s) scheduler to OTHER\n", i, buf);
+		DEBUG_OUT("Setting thread %zu scheduler to OTHER\n", i);
 
 		ret = nl_set_thread_priority(info[i], SCHED_OTHER, 0);
 		if(ret) {
