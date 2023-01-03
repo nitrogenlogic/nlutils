@@ -80,14 +80,9 @@ static struct parse_color_test color_tests[] = {
 
 static int compare_term_color(char *msg, struct nl_term_color *c, struct nl_term_color *expected)
 {
-	if (!memcmp(c, expected, sizeof(struct nl_term_color))) {
-		DEBUG_OUT("%s colors match\n", msg);
-		return 0;
-	}
+	DEBUG_OUT("\e[36mSize of color is \e[1m%zu\e[0m\n", sizeof(struct nl_term_color));
 
-	int ret = 1;
-
-	ERROR_OUT("%s colors do not match:\n", msg);
+	int ret = 0;
 
 	// Wish there was a way to iterate over a struct in C
 	COMPARE_FIELD(ret, msg, "%u", r, c, expected);
@@ -102,6 +97,8 @@ static int compare_term_color(char *msg, struct nl_term_color *c, struct nl_term
 
 static int compare_term_state(char *test_name, struct nl_term_state *s, struct nl_term_state *expected)
 {
+	DEBUG_OUT("\e[36mSize of state is \e[1m%zu\e[0m\n", sizeof(struct nl_term_state));
+
 	if (s == NULL && expected != NULL) {
 		ERROR_OUT("Terminal state is NULL but expected is not NULL for %s.\n", test_name);
 		return -1;
@@ -120,14 +117,7 @@ static int compare_term_state(char *test_name, struct nl_term_state *s, struct n
 		return 0;
 	}
 
-	if (!memcmp(s, expected, sizeof(struct nl_term_state))) {
-		DEBUG_OUT("Terminal state values match for %s.\n", test_name);
-		return 0;
-	}
-
-	int ret = 1;
-
-	ERROR_OUT("\tTerminal state does not match expected state for test %s:\n", test_name);
+	int ret = 0;
 
 	if (compare_term_color("\tforeground", &s->fg, &expected->fg)) {
 		ret++;
