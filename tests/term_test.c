@@ -49,7 +49,7 @@ static struct parse_color_test color_tests[] = {
 	},
 	{
 		.desc = "Invalid sequence does not alter state",
-		.input = "\e[1;3;4;5;7;9;38;5;253;254;255;48;5;5;4;3m",
+		.input = "\e[1;3;4;5;7;9;38;2;253;254;255;48;2;5;4;3K",
 		.expected_return = 0,
 		.init_state = all_on,
 		.expected_state = all_on,
@@ -63,10 +63,10 @@ static struct parse_color_test color_tests[] = {
 	},
 	{
 		.desc = "Generate all-on state (RGB colors, turn on all flags)",
-		.input = "\e[1;3;4;5;7;9;38;5;253;254;255;48;5;5;4;3m",
+		.input = "\e[1;3;4;5;7;9;38;2;253;254;255;48;2;5;4;3m",
 		.expected_return = 42,
-		.init_state = all_on,
-		.expected_state = NL_TERM_STATE_INITIALIZER,
+		.init_state = NL_TERM_STATE_INITIALIZER,
+		.expected_state = all_on,
 	},
 };
 
@@ -80,12 +80,12 @@ static struct parse_color_test color_tests[] = {
 
 static int compare_term_color(char *msg, struct nl_term_color *c, struct nl_term_color *expected)
 {
-	int ret = 0;
-
 	if (!memcmp(c, expected, sizeof(struct nl_term_color))) {
 		DEBUG_OUT("%s colors match\n", msg);
 		return 0;
 	}
+
+	int ret = 1;
 
 	ERROR_OUT("%s colors do not match:\n", msg);
 
@@ -102,30 +102,30 @@ static int compare_term_color(char *msg, struct nl_term_color *c, struct nl_term
 
 static int compare_term_state(char *test_name, struct nl_term_state *s, struct nl_term_state *expected)
 {
-	int ret = 0;
-
 	if (s == NULL && expected != NULL) {
-		ERROR_OUT("Terminal state is NULL but expected is not NULL.\n");
+		ERROR_OUT("Terminal state is NULL but expected is not NULL for %s.\n", test_name);
 		return -1;
 	}
 	if (s != NULL && expected == NULL) {
-		ERROR_OUT("Terminal state is not NULL but expected is NULL.\n");
+		ERROR_OUT("Terminal state is not NULL but expected is NULL for %s.\n", test_name);
 		return 1;
 	}
 	if (s == expected) {
 		if (s != NULL) {
-			ERROR_OUT("Do not pass the same non-NULL pointer for received state and expected state.\n");
+			ERROR_OUT("Do not pass the same non-NULL pointer for received state and expected state (test %s).\n", test_name);
 			return -1;
 		}
 
-		DEBUG_OUT("Both received and expected state pointers are NULL.\n");
+		DEBUG_OUT("Both received and expected state pointers are NULL for %s.\n", test_name);
 		return 0;
 	}
 
 	if (!memcmp(s, expected, sizeof(struct nl_term_state))) {
-		DEBUG_OUT("Terminal state values match.\n");
+		DEBUG_OUT("Terminal state values match for %s.\n", test_name);
 		return 0;
 	}
+
+	int ret = 1;
 
 	ERROR_OUT("\tTerminal state does not match expected state for test %s:\n", test_name);
 
@@ -165,7 +165,7 @@ int test_nl_term_parse_ansi_color(void)
 		ERROR_OUT("Expected -1 for null input and valid state\n");
 		failures += 1;
 	}
-	
+
 	result = nl_term_parse_ansi_color("\e[0m", NULL);
 	if (result != -1) {
 		ERROR_OUT("Expected -1 for valid input and null state\n");
@@ -175,7 +175,7 @@ int test_nl_term_parse_ansi_color(void)
 	for (size_t i = 0; i < ARRAY_SIZE(color_tests); i++) {
 		struct parse_color_test *t = &color_tests[i];
 
-		DEBUG_OUT("\tColor parsing test: %s\n", t->desc);
+		DEBUG_OUT("\tColor parsing test %zu: %s\n", i, t->desc);
 		state = t->init_state;
 
 		result = nl_term_parse_ansi_color(t->input, &state);

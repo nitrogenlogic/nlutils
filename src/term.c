@@ -292,7 +292,7 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 	unsigned long n;
 	unsigned int loops = 0;
 	while(*ptr) {
-		DEBUG_OUT("Color parsing offset %td ('%c'), current state %d, next state %d\n", ptr - s, *ptr, ps, next_ps);
+		DEBUG_OUT("Color parsing offset %td ('%.4s...'), current state %d, next state %d\n", ptr - s, ptr, ps, next_ps);
 
 		if (ptr - s > MAX_COLOR_PARSE_LENGTH) {
 			DEBUG_OUT("Maximum ANSI color sequence length of %d exceeded\n", MAX_COLOR_PARSE_LENGTH);
@@ -313,6 +313,8 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 
 		switch(ps) {
 			case EXPECT_SEMICOLON:
+				DEBUG_OUT("Looking for a semicolon.\n");
+
 				if (*ptr != ';') {
 					// This should have been a semicolon
 					DEBUG_OUT("Expected a semicolon, saw '%c'.\n", *ptr);
@@ -325,7 +327,9 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 				break;
 
 			case EXPECT_CONTROL:
-				next_ps = EXPECT_SEMICOLON;
+				DEBUG_OUT("Looking for a control code.\n");
+
+				next_ps = EXPECT_CONTROL;
 
 				n = strtoul(ptr, &endptr, 10);
 				if (endptr == NULL || endptr == ptr) {
@@ -337,101 +341,124 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 				// I bet that some parsers and the original hardware just use the ones digit as a bit index to set or clear for 1..9 and 21..29
 				switch(n) {
 					case 0:
+						DEBUG_OUT("Code 0, reset state\n");
 						new_state = nl_default_term_state;
 						break;
 
 					case 1:
+						DEBUG_OUT("Code 1, turn on bold\n");
 						new_state.intensity = NL_TERM_INTENSE;
 						set_color_intensity(&new_state);
 						break;
 
 					case 2:
+						DEBUG_OUT("Code 2, turn on faint\n");
 						new_state.intensity = NL_TERM_FAINT;
 						set_color_intensity(&new_state);
 						break;
 
 					case 3:
+						DEBUG_OUT("Code 3, turn on italic\n");
 						new_state.italic = 1;
 						break;
 
 					case 4:
+						DEBUG_OUT("Code 4, turn on underline\n");
 						new_state.underline = 1;
 						break;
 
 					case 5:
+						DEBUG_OUT("Code 5, turn on blink\n");
 						new_state.blink = 1;
 						break;
 
 					case 7:
+						DEBUG_OUT("Code 7, turn on reverse\n");
 						new_state.reverse = 1;
 						break;
 
 					case 9:
+						DEBUG_OUT("Code 9, turn on strikethrough\n");
 						new_state.strikethrough = 1;
 						break;
 
 					case 22:
+						DEBUG_OUT("Code 22, turn off bold or faint\n");
 						new_state.intensity = NL_TERM_NORMAL;
 						set_color_intensity(&new_state);
 						break;
 
 					case 23:
+						DEBUG_OUT("Code 23, turn off italic\n");
 						new_state.italic = 0;
 						break;
 
 					case 24:
+						DEBUG_OUT("Code 24, turn off underline\n");
 						new_state.underline = 0;
 						break;
 
 					case 25:
+						DEBUG_OUT("Code 25, turn off blink\n");
 						new_state.blink = 0;
 						break;
 
 					case 27:
+						DEBUG_OUT("Code 27, turn off reverse\n");
 						new_state.reverse = 0;
 						break;
 
 					case 29:
+						DEBUG_OUT("Code 29, turn off strikethrough\n");
 						new_state.strikethrough = 0;
 						break;
 
 					case 38:
+						DEBUG_OUT("Code 38, special foreground color\n");
 						ps = EXPECT_SEMICOLON;
 						next_ps = EXPECT_2_OR_5;
 						color_target = FOREGROUND_COLOR;
 						break;
 
 					case 39:
+						DEBUG_OUT("Code 39, reset foreground color\n");
 						new_state.fg = nl_term_default_foreground;
 						set_color_intensity(&new_state);
 						break;
 
 					case 48:
+						DEBUG_OUT("Code 48, special background color\n");
 						ps = EXPECT_SEMICOLON;
 						next_ps = EXPECT_2_OR_5;
-						color_target = FOREGROUND_COLOR;
+						color_target = BACKGROUND_COLOR;
 						break;
 
 					case 49:
+						DEBUG_OUT("Code 49, reset background color\n");
 						new_state.bg = nl_term_default_background;
 						break;
 
 					default:
 						// Handle standard colors, ignore unsupported values
 						if (n >= 30 && n <= 37) {
+							DEBUG_OUT("Code %lu, set foreground color %lu\n", n, n - 30);
 							new_state.fg = nl_term_standard_colors[new_state.intensity][n - 30];
 						} else if (n >= 40 && n <= 47) {
-							new_state.bg = nl_term_standard_colors[NL_TERM_NORMAL][n - 30];
+							DEBUG_OUT("Code %lu, set background color %lu\n", n, n - 40);
+							new_state.bg = nl_term_standard_colors[NL_TERM_NORMAL][n - 40];
+						} else {
+							DEBUG_OUT("Unknown code %lu, ignoring.\n", n);
 						}
 
 						break;
 				}
 
 				ps = EXPECT_SEMICOLON;
-				next_ps = EXPECT_CONTROL;
 				break;
 
 			case EXPECT_2_OR_5:
+				DEBUG_OUT("Looking for 2 for RGB, or 5 for xterm-256.\n");
+
 				// If we see 2, expect a 24-bit color.  If we see 5, expect an xterm color.
 				// For other values, xterm ignores them, while konsole resets the color and treats the
 				// value as a standard control code.  Let's do what xterm does.
@@ -444,30 +471,35 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 
 				switch(n) {
 					case 2:
-						// Xterm 256 color
-						next_ps = EXPECT_XTERM_256;
-						parse_color.ansi = 0;
-						parse_color.color_type = NL_TERM_COLOR_XTERM256;
-						break;
-
-					case 5:
 						// RGB color
+						DEBUG_OUT("Code 2, RGB.\n");
 						next_ps = EXPECT_RED;
 						parse_color.xterm256 = 0;
 						parse_color.ansi = 0;
 						parse_color.color_type = NL_TERM_COLOR_RGB;
 						break;
 
+					case 5:
+						// Xterm 256 color
+						DEBUG_OUT("Code 5, xterm-256.\n");
+						next_ps = EXPECT_XTERM_256;
+						parse_color.ansi = 0;
+						parse_color.color_type = NL_TERM_COLOR_XTERM256;
+						break;
+
 					default:
 						// Ignore anything else like xterm seems to do
+						DEBUG_OUT("Ignoring unexpected color type %lu\n", n);
 						next_ps = EXPECT_CONTROL;
 						break;
 				}
-				
+
 				ps = EXPECT_SEMICOLON;
 				break;
 
 			case EXPECT_XTERM_256:
+				DEBUG_OUT("Looking for an xterm-256color color index\n");
+
 				n = strtoul(ptr, &endptr, 10);
 				if (endptr == NULL || endptr == ptr) {
 					DEBUG_OUT("Did not find a number when looking for an 8-bit xterm 256-color color index.\n");
@@ -505,6 +537,13 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 			case EXPECT_RED:
 			case EXPECT_GREEN:
 			case EXPECT_BLUE:
+				DEBUG_OUT("Looking for an RGB color component: %s\n",
+						ps == EXPECT_RED ? "red" :
+						ps == EXPECT_GREEN ? "green" :
+						ps == EXPECT_BLUE ? "blue" :
+						"BUG"
+						);
+
 				n = strtoul(ptr, &endptr, 10);
 				if (endptr == NULL || endptr == ptr) {
 					DEBUG_OUT("Did not find a number when looking for an 8-bit RGB color component.\n");
