@@ -27,6 +27,21 @@ struct parse_color_test {
 	.strikethrough = 1, \
 }
 
+#define XTERM_256_LOW_INITIALIZER { \
+	.fg = { 63, 154, 154, 6, 6, NL_TERM_COLOR_XTERM256 }, \
+	.bg = { 205, 189, 83, 11, 3, NL_TERM_COLOR_XTERM256 }, \
+}
+
+#define XTERM_256_RGB_INITIALIZER { \
+	.fg = { 0xaf, 0x87, 0xd7, 140, 0, NL_TERM_COLOR_XTERM256 }, \
+	.bg = { 0x87, 0x5f, 0xd7, 98, 0, NL_TERM_COLOR_XTERM256 }, \
+}
+
+#define XTERM_256_GRAY_INITIALIZER {\
+	.fg = { 8, 8, 8, 232, 0, NL_TERM_COLOR_XTERM256 }, \
+	.bg = { 0xbc, 0xbc, 0xbc, 250, 0, NL_TERM_COLOR_XTERM256 }, \
+}
+
 static struct parse_color_test color_tests[] = {
 	{
 		.desc = "Empty valid sequence, no change to state (from zero state)",
@@ -62,11 +77,46 @@ static struct parse_color_test color_tests[] = {
 		.expected_state = NL_TERM_STATE_INITIALIZER,
 	},
 	{
+		.desc = "Reset to default, ignoring text after the escape sequence",
+		.input = "\e[0m\e[1m\e[33m This is all ignored",
+		.expected_return = 4,
+		.init_state = ALL_ON_INITIALIZER,
+		.expected_state = NL_TERM_STATE_INITIALIZER,
+	},
+	{
 		.desc = "Generate all-on state (RGB colors, turn on all flags)",
 		.input = "\e[1;3;4;5;7;9;38;2;253;254;255;48;2;5;4;3m",
 		.expected_return = 42,
 		.init_state = NL_TERM_STATE_INITIALIZER,
 		.expected_state = ALL_ON_INITIALIZER,
+	},
+	{
+		.desc = "Generate default state from all-on state",
+		.input = "\e[22;23;24;25;27;29;39;49m",
+		.expected_return = 26,
+		.init_state = ALL_ON_INITIALIZER,
+		.expected_state = NL_TERM_STATE_INITIALIZER,
+	},
+	{
+		.desc = "Parse xterm-256 colors in range 0..15 (ANSI)",
+		.input = "\e[38;5;6;48;5;11m",
+		.expected_return = 17,
+		.init_state = NL_TERM_STATE_INITIALIZER,
+		.expected_state = XTERM_256_LOW_INITIALIZER,
+	},
+	{
+		.desc = "Parse xterm-256 colors in range 16..231 (RGB)",
+		.input = "\e[38;5;140;48;5;98m",
+		.expected_return = 19,
+		.init_state = NL_TERM_STATE_INITIALIZER,
+		.expected_state = XTERM_256_RGB_INITIALIZER,
+	},
+	{
+		.desc = "Parse xterm-256 colors in range 232..255 (gray)",
+		.input = "\e[38;5;232;48;5;250m",
+		.expected_return = 20,
+		.init_state = NL_TERM_STATE_INITIALIZER,
+		.expected_state = XTERM_256_GRAY_INITIALIZER,
 	},
 };
 
@@ -120,9 +170,11 @@ static int compare_term_state(char *test_name, struct nl_term_state *s, struct n
 	int ret = 0;
 
 	if (compare_term_color("\tforeground", &s->fg, &expected->fg)) {
+		ERROR_OUT("Foreground color did not match for test %s\n", test_name);
 		ret++;
 	}
 	if (compare_term_color("\tbackground", &s->bg, &expected->bg)) {
+		ERROR_OUT("Background color did not match for test %s\n", test_name);
 		ret++;
 	}
 

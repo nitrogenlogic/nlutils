@@ -125,6 +125,17 @@ const struct nl_term_color nl_term_xterm_grays[32] = {
 	{ 0xee, 0xee, 0xee, 255, 0, NL_TERM_COLOR_XTERM256 },
 };
 
+// Xterm jumps from 0 to 95, then uses increments of 40, for the 6 values
+// for R, G, or B in its 216-color cube for 256-color mode.
+static const uint8_t xterm_rgb_values[6] = {
+	0,
+	95,
+	135,
+	175,
+	215,
+	255
+};
+
 /* Default terminal state, for use as an initializer. */
 const struct nl_term_state nl_default_term_state = NL_TERM_STATE_INITIALIZER;
 
@@ -520,9 +531,9 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 				} else if (n < 232) {
 					uint8_t rgb = n - 16;
 					parse_color = (struct nl_term_color){
-						.r = rgb / 36,
-						.g = (rgb / 6) % 6,
-						.b = rgb % 6,
+						.r = xterm_rgb_values[rgb / 36],
+						.g = xterm_rgb_values[(rgb / 6) % 6],
+						.b = xterm_rgb_values[rgb % 6],
 
 						.xterm256 = n,
 
