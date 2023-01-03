@@ -326,3 +326,8 @@ runtest false 'Extract version 3 firmware that is expected to fail' \
 headline "Testing debugging-related functions"
 runtest true 'Debugging-related function tests' \
 	./debug_test
+
+# Test terminal-related functions
+headline "Testing terminal-related functions (e.g. color escape parsing)"
+runtest true 'Terminal-related function tests' \
+	./term_test

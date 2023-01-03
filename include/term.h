@@ -25,7 +25,7 @@ enum nl_term_color_type {
 	NL_TERM_COLOR_STANDARD = 0,
 
 	// An Xterm-256 color set by 38;5;Xm
-	NL_TERM_COLOR_256 = 1,
+	NL_TERM_COLOR_XTERM256 = 1,
 
 	// A 24-bit RGB color set by 38;2;R;G;Bm
 	NL_TERM_COLOR_RGB = 2,
@@ -97,8 +97,75 @@ struct nl_term_state {
 extern const struct nl_term_state nl_default_term_state;
 
 /*
+ * The default foreground color if no explicit color is set and neither bold
+ * nor faint intensity is active.
+ */
+extern const struct nl_term_color nl_term_default_foreground;
+
+/*
+ * The default bold foreground color if no explicit color is set but color
+ * intensity is set to bold.
+ */
+extern const struct nl_term_color nl_term_bold_foreground;
+
+/*
+ * The default faint foreground color if no explicit color is set, but color
+ * intensity is set to faint.
+ */
+extern const struct nl_term_color nl_term_faint_foreground;
+
+/*
+ * Struct initializer with default foreground color for struct nl_term_state.
+ */
+#define NL_TERM_FOREGROUND_INITIALIZER { \
+	.r = 158, .g = 158, .b = 158, \
+	.xterm256 = 7, \
+	.ansi = 7, \
+	.color_type = NL_TERM_COLOR_DEFAULT, \
+}
+
+/*
+ * Struct initializer with default background color for struct nl_term_state.
+ */
+#define NL_TERM_BACKGROUND_INITIALIZER { \
+	.r = 16, .g = 16, .b = 16, \
+	.color_type = NL_TERM_COLOR_DEFAULT, \
+}
+
+/*
+ * Default values for struct nl_term_state.
+ * Use as nl_term_state s = NL_TERM_STATE_INITIALIZER;
+ */
+#define NL_TERM_STATE_INITIALIZER {\
+	.fg = NL_TERM_FOREGROUND_INITIALIZER, \
+	.bg = NL_TERM_BACKGROUND_INITIALIZER, \
+	.intensity = NL_TERM_NORMAL, \
+	.italic = 0, \
+	.underline = 0, \
+	.blink = 0, \
+	.reverse = 0, \
+	.strikethrough = 0, \
+}
+
+/*
  * Sets default state values on the given terminal state struct.
  */
 void nl_init_term_state(struct nl_term_state *s);
+
+/*
+ * Parses an ANSI color sequence at the start of the given string.  Returns the
+ * number of characters consumed, 0 if the sequence could not be parsed as an
+ * ANSI color (thus no characters consumed), or -1 on error.
+ *
+ * The given terminal state will be updated with the changes described by the
+ * escape sequence in s.  The state is only updated if a full, valid escape
+ * sequence can be parsed.
+ *
+ * Example valid string prefixes (anything after the m is ignored):
+ *     "\e[1m" -- turns on bold, returns 4
+ *     "\e[35m" -- sets a purple/magenta foreground, returns 5
+ *     "\e[38;2;128;128;128m" -- sets a dark gray 24-bit foreground, returns 19
+ */
+int nl_term_parse_ansi_color(char *s, struct nl_term_state *state);
 
 #endif /* NLUTILS_TERM_H_ */

@@ -4,20 +4,19 @@
  * Written in part as an exercise.  There are probably off-the-shelf tools that
  * one should use instead.
  *
- * Copyright (C)2023 Mike Bourgeous, licensed under AGPLv3.
+ * Copyright (C)2023 Mike Bourgeous.  Licensed under AGPLv3.
  */
 
+#include <stdlib.h>
 #include <ctype.h>
 
 #include "nlutils.h"
 
 /*
- * The default foreground color if no explicit color is set.
+ * The default foreground color if no explicit color is set and neither bold
+ * nor faint intensity is active.
  */
-const struct nl_term_color nl_term_default_foreground = {
-	.r = 158, .g = 158, .b = 158,
-	.color_type = NL_TERM_COLOR_DEFAULT,
-};
+const struct nl_term_color nl_term_default_foreground = NL_TERM_FOREGROUND_INITIALIZER;
 
 /*
  * The default bold foreground color if no explicit color is set but color
@@ -25,25 +24,26 @@ const struct nl_term_color nl_term_default_foreground = {
  */
 const struct nl_term_color nl_term_bold_foreground = {
 	.r = 234, .g = 234, .b = 234,
+	.xterm256 = 15,
+	.ansi = 7,
 	.color_type = NL_TERM_COLOR_DEFAULT,
 };
 
 /*
- * The default bold foreground color if no explicit color is set but color
+ * The default faint foreground color if no explicit color is set, but color
  * intensity is set to faint.
  */
 const struct nl_term_color nl_term_faint_foreground = {
-	.r = 234, .g = 234, .b = 234,
+	.r = 80, .g = 80, .b = 80,
+	.xterm256 = 7,
+	.ansi = 7,
 	.color_type = NL_TERM_COLOR_DEFAULT,
 };
 
 /*
  * The default background color if no explicit color is set.
  */
-const struct nl_term_color nl_term_default_background = {
-	.r = 16, .g = 16, .b = 16,
-	.color_type = NL_TERM_COLOR_DEFAULT,
-};
+const struct nl_term_color nl_term_default_background = NL_TERM_BACKGROUND_INITIALIZER;
 
 /*
  * Standard terminal colors in normal, bold, and faint intensities (0 through
@@ -92,17 +92,37 @@ const struct nl_term_color nl_term_standard_colors[3][10] = {
 	},
 };
 
-/* Default terminal state, for use as an initializer. */
-const struct nl_term_state nl_default_term_state = {
-	.fg = nl_term_default_foreground,
-	.bg = nl_term_default_background,
-
-	.intensity = NL_TERM_NORMAL,
-
-	.italic = 0,
-	.underline = 0,
-	.strikethrough = 0,
+// The 32 gray levels from xterm's 256-color palette starting at index 232.
+// Reference: https://en.wikipedia.org/wiki/ANSI_escape_code#8-bitu
+const struct nl_term_color nl_term_xterm_grays[32] = {
+	{ 0x08, 0x08, 0x08, 232, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x12, 0x12, 0x12, 233, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x1c, 0x1c, 0x1c, 234, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x26, 0x26, 0x26, 235, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x30, 0x30, 0x30, 236, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x3a, 0x3a, 0x3a, 237, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x44, 0x44, 0x44, 238, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x4e, 0x4e, 0x4e, 239, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x58, 0x58, 0x58, 240, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x62, 0x62, 0x62, 241, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x6c, 0x6c, 0x6c, 242, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x76, 0x76, 0x76, 243, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x80, 0x80, 0x80, 244, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x8a, 0x8a, 0x8a, 245, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x94, 0x94, 0x94, 246, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0x9e, 0x9e, 0x9e, 247, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0xa8, 0xa8, 0xa8, 248, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0xb2, 0xb2, 0xb2, 249, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0xbc, 0xbc, 0xbc, 250, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0xc6, 0xc6, 0xc6, 251, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0xd0, 0xd0, 0xd0, 252, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0xda, 0xda, 0xda, 253, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0xe4, 0xe4, 0xe4, 254, 0, NL_TERM_COLOR_XTERM256 },
+	{ 0xee, 0xee, 0xee, 255, 0, NL_TERM_COLOR_XTERM256 },
 };
+
+/* Default terminal state, for use as an initializer. */
+const struct nl_term_state nl_default_term_state = NL_TERM_STATE_INITIALIZER;
 
 /*
  * Sets default state values on the given terminal state struct.
@@ -120,15 +140,15 @@ static void make_color_faint(struct nl_term_color *c)
 			break;
 
 		case NL_TERM_COLOR_STANDARD:
-			*c = nl_term_colors[NL_TERM_FAINT][c->ansi];
+			*c = nl_term_standard_colors[NL_TERM_FAINT][c->ansi];
 			break;
 
-		case NL_TERM_COLOR_256:
+		case NL_TERM_COLOR_XTERM256:
 			// Xterm-256 colors 0..15 are standard and bold colors
 			if (c->xterm256 < 8) {
-				c = nl_term_colors[NL_TERM_FAINT][c->xterm256];
+				*c = nl_term_standard_colors[NL_TERM_FAINT][c->xterm256];
 			} else if (c->xterm256 < 16) {
-				c = nl_term_colors[NL_TERM_FAINT][c->xterm256 - 8];
+				*c = nl_term_standard_colors[NL_TERM_FAINT][c->xterm256 - 8];
 			}
 			break;
 
@@ -146,12 +166,12 @@ static void make_color_intense(struct nl_term_color *c)
 			break;
 
 		case NL_TERM_COLOR_STANDARD:
-			*c = nl_term_colors[NL_TERM_INTENSE][c->ansi];
+			*c = nl_term_standard_colors[NL_TERM_INTENSE][c->ansi];
 			break;
 
-		case NL_TERM_COLOR_256:
+		case NL_TERM_COLOR_XTERM256:
 			if (c->xterm256 < 8) {
-				c = nl_term_colors[NL_TERM_INTENSE][c->xterm256];
+				*c = nl_term_standard_colors[NL_TERM_INTENSE][c->xterm256];
 			}
 			break;
 
@@ -169,12 +189,12 @@ static void make_color_normal(struct nl_term_color *c)
 			break;
 
 		case NL_TERM_COLOR_STANDARD:
-			*c = nl_term_colors[NL_TERM_NORMAL][c->ansi];
+			*c = nl_term_standard_colors[NL_TERM_NORMAL][c->ansi];
 			break;
 
-		case NL_TERM_COLOR_256:
+		case NL_TERM_COLOR_XTERM256:
 			if (c->xterm256 >= 8 && c->xterm256 < 16) {
-				c = nl_term_colors[NL_TERM_NORMAL][c->xterm256 - 8];
+				*c = nl_term_standard_colors[NL_TERM_NORMAL][c->xterm256 - 8];
 			}
 			break;
 
@@ -184,23 +204,31 @@ static void make_color_normal(struct nl_term_color *c)
 	}
 }
 
+// Used by the parser to update the foreground color when the bold/intensity setting changes.
 static void set_color_intensity(struct nl_term_state *s)
 {
 	switch(s->intensity) {
 		case NL_TERM_NORMAL:
-			make_color_normal(&s->foreground);
+			make_color_normal(&s->fg);
 			break;
 
 		case NL_TERM_INTENSE:
-			make_color_intense(&s->foreground);
+			make_color_intense(&s->fg);
 			break;
 
 		case NL_TERM_FAINT:
-			make_color_faint(&s->foreground);
+			make_color_faint(&s->fg);
 			break;
 	}
 }
 
+// Used in the parser to control whether an 8-bit or 24-bit color is written to the foreground or background.
+enum target_color {
+	FOREGROUND_COLOR,
+	BACKGROUND_COLOR
+};
+
+// Used in the parser to keep track of what type of value is expected next.
 enum color_parse_state {
 	EXPECT_CONTROL,
 	EXPECT_SEMICOLON,
@@ -211,19 +239,31 @@ enum color_parse_state {
 	EXPECT_BLUE,
 };
 
+// Used by the parser to write an 8-bit or 24-bit color to the right field in the terminal state.
+static void set_target_color(struct nl_term_state *s, enum target_color color_target, struct nl_term_color *c)
+{
+	if (color_target == BACKGROUND_COLOR) {
+		s->bg = *c;
+	} else {
+		s->fg = *c;
+	}
+}
+
 /*
  * Parses an ANSI color sequence at the start of the given string.  Returns the
  * number of characters consumed, 0 if the sequence could not be parsed as an
  * ANSI color (thus no characters consumed), or -1 on error.
  *
- * The terminal state will be updated with
+ * The given terminal state will be updated with the changes described by the
+ * escape sequence in s.  The state is only updated if a full, valid escape
+ * sequence can be parsed.
  *
  * Example valid string prefixes (anything after the m is ignored):
- *     "\e[1m" -- bold
- *     "\e[35m" -- purple/magenta foreground
- *     "\e[38;2;128;128;128m" -- dark gray 24-bit foreground
+ *     "\e[1m" -- turns on bold, returns 4
+ *     "\e[35m" -- sets a purple/magenta foreground, returns 5
+ *     "\e[38;2;128;128;128m" -- sets a dark gray 24-bit foreground, returns 19
  */
-int nl_parse_ansi_color(char *s, struct nl_term_state *state)
+int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 {
 	if (CHECK_NULL(s) || CHECK_NULL(state)) {
 		return -1;
@@ -236,13 +276,15 @@ int nl_parse_ansi_color(char *s, struct nl_term_state *state)
 		return 0;
 	}
 
-	// TODO: konsole ignores multiple sequential semicolons unless they're within a 256-color or 24-bit-color sequence
+	// TODO: konsole ignores multiple sequential semicolons unless they're within a 256-color or 24-bit-color sequence; maybe we should do the same
+	// TODO: maybe implement a maximum length to guard against extra-long adversarial inputs?
 
 	char *ptr = s + 2;
 	char *endptr = NULL;
 	enum color_parse_state ps = EXPECT_CONTROL;
 	enum color_parse_state next_ps = EXPECT_SEMICOLON;
-	enum { FOREGROUND_COLOR, BACKGROUND_COLOR } parse_color = FOREGROUND_COLOR;
+	enum target_color color_target = FOREGROUND_COLOR;
+	struct nl_term_color parse_color = nl_term_default_foreground;
 	unsigned long n;
 	while(*ptr) {
 		if (*ptr == 'm') {
@@ -257,6 +299,10 @@ int nl_parse_ansi_color(char *s, struct nl_term_state *state)
 					// This should have been a semicolon
 					return 0;
 				}
+
+				ps = next_ps;
+				next_ps = EXPECT_CONTROL;
+				break;
 
 			case EXPECT_CONTROL:
 				next_ps = EXPECT_SEMICOLON;
@@ -332,35 +378,37 @@ int nl_parse_ansi_color(char *s, struct nl_term_state *state)
 					case 38:
 						ps = EXPECT_SEMICOLON;
 						next_ps = EXPECT_2_OR_5;
-						parse_color = FOREGROUND_COLOR;
+						color_target = FOREGROUND_COLOR;
 						break;
 
 					case 39:
-						new_state.foreground = nl_term_default_foreground;
+						new_state.fg = nl_term_default_foreground;
 						set_color_intensity(&new_state);
 						break;
 
 					case 48:
 						ps = EXPECT_SEMICOLON;
 						next_ps = EXPECT_2_OR_5;
-						parse_color = FOREGROUND_COLOR;
+						color_target = FOREGROUND_COLOR;
 						break;
 
 					case 49:
-						new_state.background = nl_term_default_background;
+						new_state.bg = nl_term_default_background;
 						break;
 
 					default:
 						// Handle standard colors, ignore unsupported values
 						if (n >= 30 && n <= 37) {
-							new_state.foreground = nl_term_standard_colors[new_state.intensity][n - 30];
+							new_state.fg = nl_term_standard_colors[new_state.intensity][n - 30];
 						} else if (n >= 40 && n <= 47) {
-							new_state.background = nl_term_standard_colors[NL_TERM_COLOR_DEFAULT][n - 30];
+							new_state.bg = nl_term_standard_colors[NL_TERM_NORMAL][n - 30];
 						}
 
 						break;
 				}
 
+				ps = EXPECT_SEMICOLON;
+				next_ps = EXPECT_CONTROL;
 				break;
 
 			case EXPECT_2_OR_5:
@@ -373,7 +421,100 @@ int nl_parse_ansi_color(char *s, struct nl_term_state *state)
 					return 0;
 				}
 
+				ptr = endptr;
+
+				switch(n) {
+					case 2:
+						// Xterm 256 color
+						next_ps = EXPECT_XTERM_256;
+						parse_color.ansi = 0;
+						parse_color.color_type = NL_TERM_COLOR_XTERM256;
+						break;
+
+					case 5:
+						// RGB color
+						next_ps = EXPECT_RED;
+						parse_color.xterm256 = 0;
+						parse_color.ansi = 0;
+						parse_color.color_type = NL_TERM_COLOR_RGB;
+						break;
+
+					default:
+						// Ignore anything else like xterm seems to do
+						next_ps = EXPECT_CONTROL;
+						break;
+				}
+				
+				ps = EXPECT_SEMICOLON;
 				break;
+
+			case EXPECT_XTERM_256:
+				n = strtoul(ptr, &endptr, 10);
+				if (endptr == NULL || endptr == ptr) {
+					// Failed to parse a number
+					return 0;
+				}
+
+				n %= 256;
+
+				if (n < 8) {
+					parse_color = nl_term_standard_colors[NL_TERM_NORMAL][n];
+				} else if (n < 16) {
+					parse_color = nl_term_standard_colors[NL_TERM_INTENSE][n - 8];
+				} else if (n < 232) {
+					uint8_t rgb = n - 16;
+					parse_color = (struct nl_term_color){
+						.r = rgb / 36,
+						.g = (rgb / 6) % 6,
+						.b = rgb % 6,
+
+						.xterm256 = n,
+
+						.color_type = NL_TERM_COLOR_XTERM256,
+					};
+				} else {
+					parse_color = nl_term_xterm_grays[n - 232];
+				}
+
+				set_target_color(&new_state, color_target, &parse_color);
+
+				ps = EXPECT_SEMICOLON;
+				next_ps = EXPECT_CONTROL;
+				break;
+
+			case EXPECT_RED:
+			case EXPECT_GREEN:
+			case EXPECT_BLUE:
+				n = strtoul(ptr, &endptr, 10);
+				if (endptr == NULL || endptr == ptr) {
+					// Failed to parse a number
+					return 0;
+				}
+
+				n %= 256;
+
+				switch (ps) {
+					default:
+					case EXPECT_RED:
+						parse_color.r = n;
+						next_ps = EXPECT_GREEN;
+						break;
+
+					case EXPECT_GREEN:
+						parse_color.g = n;
+						next_ps = EXPECT_BLUE;
+						break;
+
+					case EXPECT_BLUE:
+						parse_color.b = n;
+						set_target_color(&new_state, color_target, &parse_color);
+						next_ps = EXPECT_CONTROL;
+						break;
+				}
+
+				ps = EXPECT_SEMICOLON;
+				break;
+		}
 	}
 
 	// No 'm' was found before the end of the string, so don't consume any characters.
