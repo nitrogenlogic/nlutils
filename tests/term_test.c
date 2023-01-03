@@ -50,7 +50,7 @@ static struct parse_color_test color_tests[] = {
 	{
 		.desc = "Invalid sequence does not alter state",
 		.input = "\e[1;3;4;5;7;9;38;5;253;254;255;48;5;5;4;3m",
-		.expected_return = 42,
+		.expected_return = 0,
 		.init_state = all_on,
 		.expected_state = all_on,
 	},

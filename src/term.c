@@ -249,6 +249,9 @@ static void set_target_color(struct nl_term_state *s, enum target_color color_ta
 	}
 }
 
+#define MAX_COLOR_PARSE_LENGTH (128 * 4) // More than enough room to include every code once
+#define MAX_COLOR_PARSE_LOOPS (128 * 2) // Enough to include every code once (times two for semicolons)
+
 /*
  * Parses an ANSI color sequence at the start of the given string.  Returns the
  * number of characters consumed, 0 if the sequence could not be parsed as an
@@ -273,6 +276,7 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 
 	if (s[0] != 0x1b || s[1] != '[') {
 		// Not the beginning of an ANSI escape sequence.
+		DEBUG_OUT("Missing escape and left-bracket at start of ANSI color sequence.\n");
 		return 0;
 	}
 
@@ -286,9 +290,23 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 	enum target_color color_target = FOREGROUND_COLOR;
 	struct nl_term_color parse_color = nl_term_default_foreground;
 	unsigned long n;
+	unsigned int loops = 0;
 	while(*ptr) {
+		DEBUG_OUT("Color parsing offset %td ('%c'), current state %d, next state %d\n", ptr - s, *ptr, ps, next_ps);
+
+		if (ptr - s > MAX_COLOR_PARSE_LENGTH) {
+			DEBUG_OUT("Maximum ANSI color sequence length of %d exceeded\n", MAX_COLOR_PARSE_LENGTH);
+			return 0;
+		}
+
+		if (loops > MAX_COLOR_PARSE_LOOPS) {
+			ERROR_OUT("Maximum color sequence parsing loop count of %d exceeded; this may be a bug\n", MAX_COLOR_PARSE_LOOPS);
+			return 0;
+		}
+
 		if (*ptr == 'm') {
 			// End of sequence; update state and return number of characters in sequence
+			DEBUG_OUT("Found end of ANSI color sequence.  Updating state.\n");
 			*state = new_state;
 			return ptr + 1 - s;
 		}
@@ -297,8 +315,10 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 			case EXPECT_SEMICOLON:
 				if (*ptr != ';') {
 					// This should have been a semicolon
+					DEBUG_OUT("Expected a semicolon, saw '%c'.\n", *ptr);
 					return 0;
 				}
+				ptr++;
 
 				ps = next_ps;
 				next_ps = EXPECT_CONTROL;
@@ -309,7 +329,7 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 
 				n = strtoul(ptr, &endptr, 10);
 				if (endptr == NULL || endptr == ptr) {
-					// Failed to parse a number
+					DEBUG_OUT("Did not find a number when looking for a control code.\n");
 					return 0;
 				}
 				ptr = endptr;
@@ -417,10 +437,9 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 				// value as a standard control code.  Let's do what xterm does.
 				n = strtoul(ptr, &endptr, 10);
 				if (endptr == NULL || endptr == ptr) {
-					// Failed to parse a number
+					DEBUG_OUT("Did not find a number when looking for 2 (RGB) or 5 (8-bit) after 38 (foreground) or 48 (background).\n");
 					return 0;
 				}
-
 				ptr = endptr;
 
 				switch(n) {
@@ -451,9 +470,10 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 			case EXPECT_XTERM_256:
 				n = strtoul(ptr, &endptr, 10);
 				if (endptr == NULL || endptr == ptr) {
-					// Failed to parse a number
+					DEBUG_OUT("Did not find a number when looking for an 8-bit xterm 256-color color index.\n");
 					return 0;
 				}
+				ptr = endptr;
 
 				n %= 256;
 
@@ -487,9 +507,10 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 			case EXPECT_BLUE:
 				n = strtoul(ptr, &endptr, 10);
 				if (endptr == NULL || endptr == ptr) {
-					// Failed to parse a number
+					DEBUG_OUT("Did not find a number when looking for an 8-bit RGB color component.\n");
 					return 0;
 				}
+				ptr = endptr;
 
 				n %= 256;
 
@@ -518,5 +539,6 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 	}
 
 	// No 'm' was found before the end of the string, so don't consume any characters.
+	DEBUG_OUT("End of string was reached before finding terminating 'm' character.\n");
 	return 0;
 }
