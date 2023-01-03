@@ -18,27 +18,31 @@
  */
 const struct nl_term_color nl_term_default_foreground = NL_TERM_FOREGROUND_INITIALIZER;
 
+#define NL_TERM_BOLD_INITIALIZER { \
+	.r = 234, .g = 234, .b = 234, \
+	.xterm256 = 15, \
+	.ansi = 7, \
+	.color_type = NL_TERM_COLOR_DEFAULT, \
+}
+
+#define NL_TERM_FAINT_INITIALIZER { \
+	.r = 80, .g = 80, .b = 80, \
+	.xterm256 = 7, \
+	.ansi = 7, \
+	.color_type = NL_TERM_COLOR_DEFAULT, \
+}
+
 /*
  * The default bold foreground color if no explicit color is set but color
  * intensity is set to bold.
  */
-const struct nl_term_color nl_term_bold_foreground = {
-	.r = 234, .g = 234, .b = 234,
-	.xterm256 = 15,
-	.ansi = 7,
-	.color_type = NL_TERM_COLOR_DEFAULT,
-};
+const struct nl_term_color nl_term_bold_foreground = NL_TERM_BOLD_INITIALIZER;
 
 /*
  * The default faint foreground color if no explicit color is set, but color
  * intensity is set to faint.
  */
-const struct nl_term_color nl_term_faint_foreground = {
-	.r = 80, .g = 80, .b = 80,
-	.xterm256 = 7,
-	.ansi = 7,
-	.color_type = NL_TERM_COLOR_DEFAULT,
-};
+const struct nl_term_color nl_term_faint_foreground = NL_TERM_FAINT_INITIALIZER;
 
 /*
  * The default background color if no explicit color is set.
@@ -51,44 +55,44 @@ const struct nl_term_color nl_term_default_background = NL_TERM_BACKGROUND_INITI
  */
 const struct nl_term_color nl_term_standard_colors[3][10] = {
 	[ NL_TERM_NORMAL ] = {
-		[0] = {  36,  36,  36, 0, 0 },
-		[1] = { 204,  66,  66, 1, 1 },
-		[2] = { 104, 154,  51, 2, 2 },
-		[3] = { 196, 165,  42, 3, 3 },
-		[4] = {  61, 107, 164, 4, 4 },
-		[5] = { 116,  80, 123, 5, 5 },
-		[6] = {  63, 154, 154, 6, 6 },
-		[7] = { 158, 158, 158, 7, 7 },
+		[0] = {  36,  36,  36, 0, 0, NL_TERM_COLOR_STANDARD },
+		[1] = { 204,  66,  66, 1, 1, NL_TERM_COLOR_STANDARD },
+		[2] = { 104, 154,  51, 2, 2, NL_TERM_COLOR_STANDARD },
+		[3] = { 196, 165,  42, 3, 3, NL_TERM_COLOR_STANDARD },
+		[4] = {  61, 107, 164, 4, 4, NL_TERM_COLOR_STANDARD },
+		[5] = { 116,  80, 123, 5, 5, NL_TERM_COLOR_STANDARD },
+		[6] = {  63, 154, 154, 6, 6, NL_TERM_COLOR_STANDARD },
+		[7] = { 158, 158, 158, 7, 7, NL_TERM_COLOR_STANDARD },
 
 		// Default colors (foreground, background)
-		[8] = nl_term_default_foreground,
-		[9] = nl_term_default_background,
+		[8] = NL_TERM_FOREGROUND_INITIALIZER,
+		[9] = NL_TERM_BACKGROUND_INITIALIZER,
 	},
 	[ NL_TERM_BOLD ] = {
-		[0] = {  70,  70,  70,  8, 0 },
-		[1] = { 225,  70,  70,  9, 1 },
-		[2] = { 138, 196,  81, 10, 2 },
-		[3] = { 205, 189,  83, 11, 3 },
-		[4] = {  85, 146, 207, 12, 4 },
-		[5] = { 173, 115, 167, 13, 5 },
-		[6] = {  78, 190, 190, 14, 6 },
-		[7] = { 234, 234, 234, 15, 7 },
+		[0] = {  70,  70,  70,  8, 0, NL_TERM_COLOR_STANDARD },
+		[1] = { 225,  70,  70,  9, 1, NL_TERM_COLOR_STANDARD },
+		[2] = { 138, 196,  81, 10, 2, NL_TERM_COLOR_STANDARD },
+		[3] = { 205, 189,  83, 11, 3, NL_TERM_COLOR_STANDARD },
+		[4] = {  85, 146, 207, 12, 4, NL_TERM_COLOR_STANDARD },
+		[5] = { 173, 115, 167, 13, 5, NL_TERM_COLOR_STANDARD },
+		[6] = {  78, 190, 190, 14, 6, NL_TERM_COLOR_STANDARD },
+		[7] = { 234, 234, 234, 15, 7, NL_TERM_COLOR_STANDARD },
 
-		[8] = nl_term_bold_foreground,
-		[9] = nl_term_default_background,
+		[8] = NL_TERM_BOLD_INITIALIZER,
+		[9] = NL_TERM_BACKGROUND_INITIALIZER,
 	},
 	[ NL_TERM_FAINT ] = {
-		[0] = {  24,  24,  24, 0, 0 },
-		[1] = { 140,  41,  41, 1, 1 },
-		[2] = {  70, 100,  41, 2, 2 },
-		[3] = { 100,  87,  40, 3, 3 },
-		[4] = {  39,  78, 125, 4, 4 },
-		[5] = {  95,  65, 100, 5, 5 },
-		[6] = {  35,  80,  80, 6, 6 },
-		[7] = {  80,  80,  80, 7, 7 },
+		[0] = {  24,  24,  24, 0, 0, NL_TERM_COLOR_STANDARD },
+		[1] = { 140,  41,  41, 1, 1, NL_TERM_COLOR_STANDARD },
+		[2] = {  70, 100,  41, 2, 2, NL_TERM_COLOR_STANDARD },
+		[3] = { 100,  87,  40, 3, 3, NL_TERM_COLOR_STANDARD },
+		[4] = {  39,  78, 125, 4, 4, NL_TERM_COLOR_STANDARD },
+		[5] = {  95,  65, 100, 5, 5, NL_TERM_COLOR_STANDARD },
+		[6] = {  35,  80,  80, 6, 6, NL_TERM_COLOR_STANDARD },
+		[7] = {  80,  80,  80, 7, 7, NL_TERM_COLOR_STANDARD },
 
-		[8] = nl_term_bold_foreground,
-		[9] = nl_term_default_background,
+		[8] = NL_TERM_BOLD_INITIALIZER,
+		[9] = NL_TERM_BACKGROUND_INITIALIZER,
 	},
 };
 

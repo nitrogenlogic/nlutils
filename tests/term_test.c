@@ -16,16 +16,16 @@ struct parse_color_test {
 	struct nl_term_state expected_state;
 };
 
-static const struct nl_term_state all_on = {
-	.fg = { 253, 254, 255, 0, 0, NL_TERM_COLOR_RGB },
-	.bg = { 5, 4, 3, 0, 0, NL_TERM_COLOR_RGB },
-	.intensity = NL_TERM_INTENSE,
-	.italic = 1,
-	.underline = 1,
-	.blink = 1,
-	.reverse = 1,
-	.strikethrough = 1,
-};
+#define ALL_ON_INITIALIZER { \
+	.fg = { 253, 254, 255, 0, 0, NL_TERM_COLOR_RGB }, \
+	.bg = { 5, 4, 3, 0, 0, NL_TERM_COLOR_RGB }, \
+	.intensity = NL_TERM_INTENSE, \
+	.italic = 1, \
+	.underline = 1, \
+	.blink = 1, \
+	.reverse = 1, \
+	.strikethrough = 1, \
+}
 
 static struct parse_color_test color_tests[] = {
 	{
@@ -44,21 +44,21 @@ static struct parse_color_test color_tests[] = {
 		.desc = "Empty valid sequence, no change to state (from modified state)",
 		.input = "\e[m",
 		.expected_return = 3,
-		.init_state = all_on,
-		.expected_state = all_on,
+		.init_state = ALL_ON_INITIALIZER,
+		.expected_state = ALL_ON_INITIALIZER,
 	},
 	{
 		.desc = "Invalid sequence does not alter state",
 		.input = "\e[1;3;4;5;7;9;38;2;253;254;255;48;2;5;4;3K",
 		.expected_return = 0,
-		.init_state = all_on,
-		.expected_state = all_on,
+		.init_state = ALL_ON_INITIALIZER,
+		.expected_state = ALL_ON_INITIALIZER,
 	},
 	{
 		.desc = "Reset to default",
 		.input = "\e[0m",
 		.expected_return = 4,
-		.init_state = all_on,
+		.init_state = ALL_ON_INITIALIZER,
 		.expected_state = NL_TERM_STATE_INITIALIZER,
 	},
 	{
@@ -66,7 +66,7 @@ static struct parse_color_test color_tests[] = {
 		.input = "\e[1;3;4;5;7;9;38;2;253;254;255;48;2;5;4;3m",
 		.expected_return = 42,
 		.init_state = NL_TERM_STATE_INITIALIZER,
-		.expected_state = all_on,
+		.expected_state = ALL_ON_INITIALIZER,
 	},
 };
 

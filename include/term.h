@@ -129,6 +129,8 @@ extern const struct nl_term_color nl_term_faint_foreground;
  */
 #define NL_TERM_BACKGROUND_INITIALIZER { \
 	.r = 16, .g = 16, .b = 16, \
+	.xterm256 = 0, \
+	.ansi = 0, \
 	.color_type = NL_TERM_COLOR_DEFAULT, \
 }
 
