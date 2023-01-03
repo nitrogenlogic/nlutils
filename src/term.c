@@ -532,6 +532,8 @@ int nl_term_parse_ansi_color(char *s, struct nl_term_state *state)
 					parse_color = nl_term_xterm_grays[n - 232];
 				}
 
+				parse_color.color_type = NL_TERM_COLOR_XTERM256;
+
 				set_target_color(&new_state, color_target, &parse_color);
 
 				ps = EXPECT_SEMICOLON;
