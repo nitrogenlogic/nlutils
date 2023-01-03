@@ -141,6 +141,7 @@ extern const char * const nlutils_version;
 #include "fifo.h"
 #include "url_req.h"
 #include "debug.h"
+#include "term.h"
 
 #ifdef __cplusplus
 }
