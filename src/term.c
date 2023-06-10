@@ -97,7 +97,7 @@ const struct nl_term_color nl_term_standard_colors[3][10] = {
 };
 
 // The 32 gray levels from xterm's 256-color palette starting at index 232.
-// Reference: https://en.wikipedia.org/wiki/ANSI_escape_code#8-bitu
+// Reference: https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
 const struct nl_term_color nl_term_xterm_grays[32] = {
 	{ 0x08, 0x08, 0x08, 232, 0, NL_TERM_COLOR_XTERM256 },
 	{ 0x12, 0x12, 0x12, 233, 0, NL_TERM_COLOR_XTERM256 },
