@@ -13,15 +13,17 @@ GEM
       pry (~> 0.10)
     rdiscount (2.2.0.1)
     slop (3.6.0)
+    webrick (1.8.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 1.17)
+  bundler (~> 2.0)
   pry
   pry-byebug
   rdiscount
+  webrick
 
 BUNDLED WITH
-   1.17.3
+   2.4.15
