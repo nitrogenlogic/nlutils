@@ -65,6 +65,23 @@ void *nl_fifo_get(struct nl_fifo *l);
 void *nl_fifo_peek(struct nl_fifo *l);
 
 /*
+ * Retrieves, but does not remove the most-recently-added (last) element from
+ * the fifo.  Returns NULL if the list is empty or an error occurs.
+ */
+void *nl_fifo_peek_last(struct nl_fifo *l);
+
+/*
+ * Retrieves, but does not remove the Nth-least-recently-added element (Nth
+ * element in the list) from the fifo.  Be aware that this is O(N).  If the
+ * index is negative, then indexing starts from the end, with -1 referring to
+ * the most-recently-added (last) element.
+ *
+ * Returns NULL if the list is empty, the index is out of range, or an error
+ * occurs.
+ */
+void *nl_fifo_peek_index(struct nl_fifo *l, ssize_t index);
+
+/*
  * Removes the least-recently-added instance of the given element from the
  * fifo.  Returns 0 if the element existed and was deleted, -1 if the element
  * did not exist or an error occurred.  NULL data is an error.
