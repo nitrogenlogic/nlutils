@@ -104,25 +104,46 @@ static int test_get(struct nl_fifo *fifo, const char *expected, unsigned int cou
 	return error;
 }
 
-static int test_peek(struct nl_fifo *fifo, char *expected, unsigned int count)
+static int test_peek(struct nl_fifo *fifo, char *expected, unsigned int count, int peek_last)
 {
+	char *suffix = peek_last ? "_last" : "";
 	char *result;
 	unsigned int oldcount = fifo->count;
 	int error = 0;
 
-	result = nl_fifo_peek(fifo);
+	result = peek_last ? nl_fifo_peek_last(fifo) : nl_fifo_peek(fifo);
 	if(result != expected) {
-		ERROR_OUT("nl_fifo_peek() returned %s, expected %s.\n", result, expected);
+		ERROR_OUT("nl_fifo_peek%s() returned %s, expected %s.\n",
+				suffix, result, expected);
 		error = -1;
 	}
 
 	if(oldcount != fifo->count) {
-		ERROR_OUT("Count changed from %d to %d after nl_fifo_peek().\n", oldcount, fifo->count);
+		ERROR_OUT("Count changed from %d to %d after nl_fifo_peek%s().\n",
+				oldcount, fifo->count, suffix);
 		error = -1;
 	}
 
 	if(fifo->count != count) {
-		ERROR_OUT("Expected count of %d after nl_fifo_peek(), actually %d.\n", count, fifo->count);
+		ERROR_OUT("Expected count of %d after nl_fifo_peek%s(), actually %d.\n", count, suffix, fifo->count);
+		error = -1;
+	}
+
+	return error;
+}
+
+static int test_peek_index(struct nl_fifo *fifo, char *expected, ssize_t index)
+{
+	int error = 0;
+	unsigned int oldcount = fifo->count;
+	char *result = nl_fifo_peek_index(fifo, index);
+	if (result != expected) {
+		ERROR_OUT("nl_fifo_peek_index(%zd) returned %s, expected %s.\n", index, result, expected);
+		error = -1;
+	}
+
+	if (oldcount != fifo->count) {
+		ERROR_OUT("nl_fifo_peek_index(%zd) changed count from %d to %d (shouldn't have changed).\n", index, oldcount, fifo->count);
 		error = -1;
 	}
 
@@ -594,8 +615,29 @@ int main(void)
 		return -1;
 	}
 
-	if(test_peek(f1, str1, 1)) {
+	if(test_peek(f1, str1, 1, 0)) {
 		ERR(f1, "Error peeking single-element FIFO.\n");
+		return -1;
+	}
+	if(test_peek(f1, str1, 1, 1)) {
+		ERR(f1, "Error peeking last element on single-element FIFO.\n");
+		return -1;
+	}
+
+	if (test_peek_index(f1, str1, 0)) {
+		ERR(f1, "Error peeking at valid index on single-element FIFO.\n");
+		return -1;
+	}
+	if (test_peek_index(f1, str1, -1)) {
+		ERR(f1, "Error peeking at valid negative index on single-element FIFO.\n");
+		return -1;
+	}
+	if (test_peek_index(f1, NULL, 1)) {
+		ERR(f1, "Error peeking at invalid index on single-element FIFO.\n");
+		return -1;
+	}
+	if (test_peek_index(f1, NULL, -2)) {
+		ERR(f1, "Error peeking at invalid negative index on single-element FIFO.\n");
 		return -1;
 	}
 
@@ -604,8 +646,37 @@ int main(void)
 		return -1;
 	}
 
-	if(test_peek(f1, str1, 2)) {
+	if(test_peek(f1, str1, 2, 0)) {
 		ERR(f1, "Error peeking two-element FIFO.\n");
+		return -1;
+	}
+	if(test_peek(f1, str2, 2, 1)) {
+		ERR(f1, "Error peeking last element on two-element FIFO.\n");
+		return -1;
+	}
+
+	if (test_peek_index(f1, str1, 0)) {
+		ERR(f1, "Error peeking at valid index on two-element FIFO.\n");
+		return -1;
+	}
+	if (test_peek_index(f1, str2, 1)) {
+		ERR(f1, "Error peeking at valid index on two-element FIFO.\n");
+		return -1;
+	}
+	if (test_peek_index(f1, str2, -1)) {
+		ERR(f1, "Error peeking at valid negative index on two-element FIFO.\n");
+		return -1;
+	}
+	if (test_peek_index(f1, str1, -2)) {
+		ERR(f1, "Error peeking at valid negative index on two-element FIFO.\n");
+		return -1;
+	}
+	if (test_peek_index(f1, NULL, 2)) {
+		ERR(f1, "Error peeking at invalid index on two-element FIFO.\n");
+		return -1;
+	}
+	if (test_peek_index(f1, NULL, -3)) {
+		ERR(f1, "Error peeking at invalid negative index on two-element FIFO.\n");
 		return -1;
 	}
 
@@ -808,10 +879,28 @@ int main(void)
 			return -1;
 		}
 
-		if(test_peek(f1, str1, i * 3 + 3)) {
+		if(test_peek(f1, str1, i * 3 + 3, 0)) {
 			ERR(f1, "Error peeking %s\n", str1);
 			return -1;
 		}
+
+		if(test_peek(f1, str3, i * 3 + 3, 1)) {
+			ERR(f1, "Error peeking last element %s\n", str3);
+			return -1;
+		}
+	}
+
+	// f1 should have a repeating sequence of str1, str2, str3, str1, etc.
+	if (test_peek_index(f1, str1, 3) || test_peek_index(f1, str2, 31) || test_peek_index(f1, str3, 299) ||
+			test_peek_index(f1, str3, -1) || test_peek_index(f1, str2, -5) || test_peek_index(f1, str1, -9) ||
+			test_peek_index(f1, str1, -300)) {
+		ERR(f1, "Error peeking at indexes in longer fifo");
+		return -1;
+	}
+
+	if (test_peek_index(f1, NULL, -301) || test_peek_index(f1, NULL, 300)) {
+		ERR(f1, "Error peeking out-of-range indexes in longer fifo");
+		return -1;
 	}
 
 	for(i = 0; i < 12; i++) {

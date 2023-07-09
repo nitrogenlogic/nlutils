@@ -190,8 +190,8 @@ void *nl_fifo_get(struct nl_fifo *l)
 }
 
 /*
- * Retrieves, but does not remove the least-recently-added element from the
- * fifo.  Returns NULL if the list is empty or an error occurs.
+ * Retrieves, but does not remove the least-recently-added (first) element from
+ * the fifo.  Returns NULL if the list is empty or an error occurs.
  */
 void *nl_fifo_peek(struct nl_fifo *l)
 {
@@ -203,6 +203,59 @@ void *nl_fifo_peek(struct nl_fifo *l)
 	}
 
 	return l->first->data;
+}
+
+/*
+ * Retrieves, but does not remove the most-recently-added (last) element from
+ * the fifo.  Returns NULL if the list is empty or an error occurs.
+ */
+void *nl_fifo_peek_last(struct nl_fifo *l)
+{
+	if (CHECK_NULL(l)) {
+		return NULL;
+	}
+	if (l->count == 0) {
+		return NULL;
+	}
+
+	return l->last->data;
+}
+
+/*
+ * Retrieves, but does not remove the Nth-least-recently-added element (Nth
+ * element in the list) from the fifo.  Be aware that this is O(N).  If the
+ * index is negative, then indexing starts from the end, with -1 referring to
+ * the most-recently-added (last) element.
+ *
+ * Returns NULL if the list is empty, the index is out of range, or an error
+ * occurs.
+ */
+void *nl_fifo_peek_index(struct nl_fifo *l, ssize_t index)
+{
+	if (CHECK_NULL(l)) {
+		return NULL;
+	}
+	if (l->count == 0) {
+		return NULL;
+	}
+
+	ssize_t normalized_index = index;
+	if (normalized_index < 0) {
+		normalized_index += l->count;
+	}
+
+	if (normalized_index < 0 || normalized_index >= l->count) {
+		ERROR_OUT("Index %zd is out of range 0..%u (or -%u..-1)\n",
+				index, l->count - 1, l->count);
+		return NULL;
+	}
+
+	const struct nl_fifo_element *iter = NULL;
+	for (ssize_t i = 0; i < normalized_index; i++) {
+		nl_fifo_next(l, &iter);
+	}
+
+	return nl_fifo_next(l, &iter);
 }
 
 /*
